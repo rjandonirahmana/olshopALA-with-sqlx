@@ -1,34 +1,25 @@
 package handler
 
-import (
-	"errors"
-	"graphql/repo"
-	"graphql/usecase"
-	"net/http"
+// type handlerCustomer struct {
+// 	usecase usecase.CustomerInt
+// }
 
-	"github.com/gin-gonic/gin"
-)
+// func NewHandlerCustomer(use usecase.CustomerInt) *handlerCustomer {
+// 	return &handlerCustomer{usecase: use}
+// }
 
-type handlerCustomer struct {
-	usecase usecase.CustomerInt
-}
+// func (h *handlerCustomer) CreateCustomer(c *gin.Context) {
+// 	var customer repo.Customer
 
-func NewHandlerCustomer(use usecase.CustomerInt) *handlerCustomer {
-	return &handlerCustomer{usecase: use}
-}
+// 	c.ShouldBindJSON(&customer)
 
-func (h *handlerCustomer) CreateCustomer(c *gin.Context) {
-	var customer repo.Customer
+// 	err := h.usecase.Register(customer)
 
-	c.ShouldBindJSON(&customer)
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, errors.New("gagal"))
+// 		return
+// 	}
 
-	err := h.usecase.Register(customer)
+// 	c.JSON(http.StatusOK, nil)
 
-	if err != nil {
-		c.JSON(http.StatusBadRequest, errors.New("gagal"))
-		return
-	}
-
-	c.JSON(http.StatusOK, nil)
-
-}
+// }

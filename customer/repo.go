@@ -13,7 +13,7 @@ type repository struct {
 type Repository interface {
 	RegisterUser(customer Customer) (Customer, error)
 	UpdateCustomerPhone(email string, number int64) error
-	GetCustomerByID(id int) Customer
+	GetCustomerByID(id int) (Customer, error)
 	ChangePassword(newPassword string, id int) error
 	GetCustomerByEmail(email string) (Customer, error)
 	GetLastID() (int, error)
@@ -25,9 +25,9 @@ func NewRepo(db *sqlx.DB) *repository {
 
 func (r *repository) RegisterUser(customer Customer) (Customer, error) {
 
-	querry := `INSERT INTO customers (id, name, phone, email, password, salt, avatar, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	querry := `INSERT INTO customers (id, name, phone, email, password, salt, avatar, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
-	_, err := r.db.Exec(querry, customer.ID, customer.Name, customer.Phone, customer.Email, customer.Password, customer.Salt, customer.Avatar, customer.CreatedAt)
+	_, err := r.db.Exec(querry, customer.ID, customer.Name, customer.Phone, customer.Email, customer.Password, customer.Salt, customer.Avatar, customer.CreatedAt, customer.UpdatedAt)
 
 	if err != nil {
 		return Customer{}, err
@@ -68,14 +68,14 @@ func (r *repository) GetLastID() (int, error) {
 
 }
 
-func (r *repository) GetCustomerByID(id int) Customer {
+func (r *repository) GetCustomerByID(id int) (Customer, error) {
 	querry := `SELECT * FROM customers WHERE id = ?`
 
 	var customerdb CustomerDB
 
 	err := r.db.Get(&customerdb, querry, id)
 	if err != nil {
-		return Customer{}
+		return Customer{}, err
 	}
 
 	return Customer{
@@ -87,7 +87,8 @@ func (r *repository) GetCustomerByID(id int) Customer {
 		Salt:      customerdb.Salt.String,
 		Avatar:    customerdb.Avatar.String,
 		CreatedAt: customerdb.CreatedAt.Time,
-	}
+		UpdatedAt: customerdb.UpdatedAt.Time,
+	}, nil
 }
 
 func (r *repository) ChangeAvatar(avatarFile string, id int) error {

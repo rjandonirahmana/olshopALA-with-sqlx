@@ -11,20 +11,20 @@ type repoProduct struct {
 }
 
 type RepoProduct interface {
-	InsertProduct(product Product) error
-	InsertDetailsProduct(product ProductDesc) error
+	AddProduct(product Product) error
+	InsertDetailProduct(product ProductDesc) error
 	UpdatePrice(id int, price int) error
 	GetProductsOrderByprice(name string) ([]Product, error)
 	GetProductsOrderBypriceDSC(name string) ([]Product, error)
 	GetDetailsProductByName(id int) []Product
-	GetProductByID(id int) Product
+	GetProductByID(id int) (Product, error)
 }
 
 func NewRepoProduct(db *sqlx.DB) *repoProduct {
 	return &repoProduct{db: db}
 }
 
-func (r *repoProduct) InsertProduct(product Product) error {
+func (r *repoProduct) AddProduct(product Product) error {
 
 	querry := `INSERT INTO products (id, name, price) VALUES (?, ?, ?) `
 
@@ -38,7 +38,7 @@ func (r *repoProduct) InsertProduct(product Product) error {
 	return nil
 }
 
-func (r *repoProduct) InsertDetailsProduct(product ProductDesc) error {
+func (r *repoProduct) InsertDetailProduct(product ProductDesc) error {
 	querry := `INSERT INTO product_desc (product_id, desc) VALUES (?, ?)`
 
 	_, err := r.db.Exec(querry, product.ProductID, product.Description)
@@ -125,22 +125,18 @@ func (r *repoProduct) GetDetailsProductByName(id int) []Product {
 		return []Product{}
 	}
 
-	if len(products) == 0 {
-		r.GetDetailsProductByName(id)
-	}
-
 	return products
 }
 
-func (r *repoProduct) GetProductByID(id int) Product {
+func (r *repoProduct) GetProductByID(id int) (Product, error) {
 	querry := `SELECT * FROM product WHERE id = ?`
 
 	var product Product
 	err := r.db.Get(&product, querry, id)
 	if err != nil {
 		fmt.Println(err)
-		return Product{}
+		return Product{}, err
 	}
 
-	return product
+	return product, nil
 }

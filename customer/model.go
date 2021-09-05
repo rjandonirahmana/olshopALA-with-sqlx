@@ -14,6 +14,7 @@ type Customer struct {
 	Salt      string    `json:"salt"`
 	Avatar    string    `json:"avatar"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
 type CustomerDB struct {
@@ -25,6 +26,7 @@ type CustomerDB struct {
 	Salt      sql.NullString `db:"salt"`
 	Avatar    sql.NullString `db:"avatar"`
 	CreatedAt sql.NullTime   `db:"created_at"`
+	UpdatedAt sql.NullTime   `db:"updated_at"`
 }
 
 type InputCustomer struct {

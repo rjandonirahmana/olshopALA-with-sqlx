@@ -15,6 +15,6 @@ type ProductImage struct {
 }
 
 type ProductDesc struct {
-	ProductID   int     `db:"product_id" json:"product_id"`
-	Description *string `db:"desc" json:"description"`
+	ProductID   int    `db:"product_id" json:"product_id"`
+	Description string `db:"desc" json:"description"`
 }

@@ -14,6 +14,8 @@ type ServiceCustomer struct {
 type CustomerInt interface {
 	Register(customer Customer) (Customer, error)
 	LoginCustomer(input InputLogin) (Customer, error)
+	UpdateCustomerPhone(phone int64, email string) error
+	GetCustomerByID(id int) (Customer, error)
 }
 
 func NewCustomerService(repository Repository) *ServiceCustomer {
@@ -25,6 +27,7 @@ func (s *ServiceCustomer) Register(customer Customer) (Customer, error) {
 	customer.Salt = "salt"
 	customer.Password += customer.Salt
 	customer.CreatedAt = time.Now()
+	customer.UpdatedAt = time.Now()
 
 	hashpassword, err := bcrypt.GenerateFromPassword([]byte(customer.Password), bcrypt.MinCost)
 	if err != nil {
@@ -32,6 +35,7 @@ func (s *ServiceCustomer) Register(customer Customer) (Customer, error) {
 	}
 
 	customer.Password = string(hashpassword)
+
 	id, _ := s.repo.GetLastID()
 	customer.ID = id + 1
 
@@ -76,4 +80,14 @@ func (s *ServiceCustomer) UpdateCustomerPhone(phone int64, email string) error {
 	}
 
 	return nil
+}
+
+func (s *ServiceCustomer) GetCustomerByID(id int) (Customer, error) {
+
+	customer, err := s.repo.GetCustomerByID(id)
+	if err != nil {
+		return Customer{}, err
+	}
+
+	return customer, nil
 }

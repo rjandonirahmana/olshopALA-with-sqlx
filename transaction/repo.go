@@ -12,8 +12,9 @@ type repoTransaction struct {
 
 type RepoTransaction interface {
 	SumPriceBoughtById(id int) int
-	GetDetailProductByID(id int) (Transactions, error)
+	GetDetailTransaction(id int) (Transactions, error)
 	InserTransaction(t Transactions) error
+	GetLastTransaction() (int, error)
 }
 
 func NewTransaction(db *sqlx.DB) *repoTransaction {
@@ -61,4 +62,16 @@ func (r *repoTransaction) InserTransaction(t Transactions) error {
 	}
 
 	return nil
+}
+
+func (r *repoTransaction) GetLastTransaction() (int, error) {
+	querry := `SELECT id FROM transactions WHERE id = (SELECT MAX(id) FROM transactions`
+
+	var value int
+	err := r.db.Get(&value, querry)
+	if err != nil {
+		return 0, err
+	}
+	return value, nil
+
 }

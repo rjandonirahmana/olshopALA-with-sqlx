@@ -3,6 +3,7 @@ module graphql
 go 1.16
 
 require (
+	github.com/gin-contrib/sessions v0.0.3
 	github.com/gin-gonic/gin v1.7.4
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang-jwt/jwt/v4 v4.0.0

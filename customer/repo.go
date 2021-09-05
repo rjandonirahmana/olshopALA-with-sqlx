@@ -11,31 +11,32 @@ type repository struct {
 }
 
 type Repository interface {
-	RegisterUser(customer Customer) error
-	UpdateCustomerPhone(id int, customer Customer) error
+	RegisterUser(customer Customer) (Customer, error)
+	UpdateCustomerPhone(email string, number int64) error
 	GetCustomerByID(id int) Customer
 	ChangePassword(newPassword string, id int) error
-	GetCustomerByEmail(email string) (Customer, bool)
+	GetCustomerByEmail(email string) (Customer, error)
+	GetLastID() (int, error)
 }
 
 func NewRepo(db *sqlx.DB) *repository {
 	return &repository{db: db}
 }
 
-func (r *repository) RegisterUser(customer Customer) error {
+func (r *repository) RegisterUser(customer Customer) (Customer, error) {
 
-	querry := `INSERT INTO customers (id, name, phone, email, password, salt, avatar) VALUES (?, ?, ?, ?, ?, ?, ?)`
+	querry := `INSERT INTO customers (id, name, phone, email, password, salt, avatar, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	_, err := r.db.Exec(querry, customer.ID, customer.Name, customer.Phone, customer.Email, customer.Password, customer.Salt, customer.Avatar)
+	_, err := r.db.Exec(querry, customer.ID, customer.Name, customer.Phone, customer.Email, customer.Password, customer.Salt, customer.Avatar, customer.CreatedAt)
 
 	if err != nil {
-		return err
+		return Customer{}, err
 	}
 
-	return nil
+	return customer, nil
 }
 
-func (r *repository) UpdateCustomerPhone(id int, customer Customer) error {
+func (r *repository) UpdateCustomerPhone(email string, number int64) error {
 
 	querry := `
 	UPDATE 
@@ -43,16 +44,28 @@ func (r *repository) UpdateCustomerPhone(id int, customer Customer) error {
 	SET 
 		phone = ? 
 	WHERE 
-		id = ?
+		email = ?
 	`
 
-	_, err := r.db.Exec(querry, customer.Phone, id)
+	_, err := r.db.Exec(querry, number, email)
 
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (r *repository) GetLastID() (int, error) {
+	querry := `SELECT id FROM customers WHERE id = (SELECT MAX(id) FROM customers)`
+
+	var value int
+	err := r.db.Get(&value, querry)
+	if err != nil {
+		return 0, err
+	}
+	return value, nil
+
 }
 
 func (r *repository) GetCustomerByID(id int) Customer {
@@ -66,13 +79,14 @@ func (r *repository) GetCustomerByID(id int) Customer {
 	}
 
 	return Customer{
-		Name:     customerdb.Name.String,
-		ID:       int(customerdb.ID.Int32),
-		Email:    customerdb.Email.String,
-		Phone:    customerdb.Phone.Int64,
-		Password: customerdb.Password.String,
-		Salt:     customerdb.Salt.String,
-		Avatar:   customerdb.Avatar.String,
+		Name:      customerdb.Name.String,
+		ID:        int(customerdb.ID.Int32),
+		Email:     customerdb.Email.String,
+		Phone:     customerdb.Phone.Int64,
+		Password:  customerdb.Password.String,
+		Salt:      customerdb.Salt.String,
+		Avatar:    customerdb.Avatar.String,
+		CreatedAt: customerdb.CreatedAt.Time,
 	}
 }
 
@@ -102,16 +116,15 @@ func (r *repository) ChangePassword(newPassword string, id int) error {
 	return nil
 }
 
-func (r *repository) GetCustomerByEmail(email string) (Customer, bool) {
+func (r *repository) GetCustomerByEmail(email string) (Customer, error) {
 	querry := `SELECT * FROM customers WHERE email = ?`
 
-	var c Customer
-	err := r.db.Get(&c, querry, email)
+	var customer Customer
 
+	err := r.db.Get(&customer, querry, email)
 	if err != nil {
-		fmt.Println(err)
-		return Customer{}, false
+		return Customer{}, err
 	}
 
-	return c, true
+	return customer, nil
 }

@@ -21,7 +21,9 @@ func (h *handlerCustomer) CreateCustomer(c *gin.Context) {
 
 	c.ShouldBindJSON(&customers)
 	if customers.Password != customers.ConfirmPassword {
-		c.JSON(http.StatusBadRequest, errors.New("password and confirmed password is different"))
+		response := APIResponse("password and confirm password is different", http.StatusForbidden, "failed", nil)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
 	}
 
 	customerSave := customer.Customer{}
@@ -29,14 +31,15 @@ func (h *handlerCustomer) CreateCustomer(c *gin.Context) {
 	customerSave.Email = customers.Email
 	customerSave.Password = customers.Password
 
-	err := h.usecase.Register(customerSave)
+	customer, err := h.usecase.Register(customerSave)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, errors.New("failed to create customer"))
 		return
 	}
 
-	c.JSON(http.StatusOK, nil)
+	response := APIResponse("account successfully created", http.StatusOK, "success", customer)
+	c.JSON(http.StatusUnprocessableEntity, response)
 
 }
 
@@ -47,7 +50,8 @@ func (h *handlerCustomer) Login(c *gin.Context) {
 
 	customer, err := h.usecase.LoginCustomer(input)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, errors.New("failed to login customer"))
+		response := APIResponse(err.Error(), http.StatusForbidden, "failed", err)
+		c.JSON(http.StatusUnprocessableEntity, response)
 		return
 	}
 
@@ -56,3 +60,8 @@ func (h *handlerCustomer) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 
 }
+
+// func (h *handlerCustomer) UpdatePhone(c *gin.Context) {
+// 	phone, err := strconv.ParseInt(c.Request.FormValue("phone"), 10, 10)
+
+// }

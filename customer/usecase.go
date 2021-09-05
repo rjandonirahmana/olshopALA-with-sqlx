@@ -2,6 +2,7 @@ package customer
 
 import (
 	"errors"
+	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -12,6 +13,7 @@ type ServiceCustomer struct {
 
 type CustomerInt interface {
 	Register(customer Customer) error
+	LoginCustomer(input InputLogin) (Customer, error)
 }
 
 func NewCustomerService(repository Repository) *ServiceCustomer {
@@ -23,7 +25,7 @@ func (s *ServiceCustomer) Register(customer Customer) error {
 	customer.Salt = "salt"
 	customer.Password += customer.Salt
 
-	hashpassword, err := bcrypt.GenerateFromPassword([]byte(customer.Password), bcrypt.MaxCost)
+	hashpassword, err := bcrypt.GenerateFromPassword([]byte(customer.Password), bcrypt.MinCost)
 	if err != nil {
 		return err
 	}
@@ -32,39 +34,29 @@ func (s *ServiceCustomer) Register(customer Customer) error {
 
 	err = s.repo.RegisterUser(customer)
 	if err != nil {
+		fmt.Println(err)
 		return err
 	}
 
 	return nil
 }
 
-func (s *ServiceCustomer) LoginCustomer(input Customer) error {
+func (s *ServiceCustomer) LoginCustomer(input InputLogin) (Customer, error) {
 
-	input.Salt = "salt"
-	password := input.Password + input.Salt
+	salt := "salt"
+	password := input.Password + salt
 
 	customer, err := s.repo.GetCustomerByEmail(input.Email)
 	if err {
-		return errors.New("email not found")
+		return Customer{}, errors.New("email not found")
 
 	}
 
 	err1 := bcrypt.CompareHashAndPassword([]byte(customer.Password), []byte(password))
 	if err1 != nil {
-		return errors.New("this isnt your account")
+		return Customer{}, errors.New("this isnt your account")
 	}
 
-	return nil
-
-}
-
-func (s *ServiceCustomer) IsEmailAvailable(input Customer) bool {
-
-	_, available := s.repo.GetCustomerByEmail(input.Email)
-	if !available {
-		return true
-	}
-
-	return false
+	return customer, nil
 
 }

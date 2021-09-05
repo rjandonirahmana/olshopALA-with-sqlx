@@ -21,3 +21,15 @@ type CustomerDB struct {
 	Salt     sql.NullString `db:"salt"`
 	Avatar   sql.NullString `db:"avatar"`
 }
+
+type InputCustomer struct {
+	Name            string `json:"name" binding:"required"`
+	Email           string `json:"email" binding:"required"`
+	Password        string `json:"password" binding:"required"`
+	ConfirmPassword string `json:"confirm_password" binding:"required"`
+}
+
+type InputLogin struct {
+	Email    string `json:"email" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}

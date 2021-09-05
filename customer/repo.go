@@ -76,7 +76,18 @@ func (r *repository) GetCustomerByID(id int) Customer {
 	}
 }
 
-func (r *repository) ChangeAvatar()
+func (r *repository) ChangeAvatar(avatarFile string, id int) error {
+	querry := `UPDATE customers SET avatar = ? WHERE id = ? `
+
+	_, err := r.db.Exec(querry, id)
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	return nil
+}
 
 func (r *repository) ChangePassword(newPassword string, id int) error {
 	querry := `UPDATE customers SET password = ? WHERE id = ? `

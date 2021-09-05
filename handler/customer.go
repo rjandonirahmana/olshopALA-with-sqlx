@@ -1,25 +1,58 @@
 package handler
 
-// type handlerCustomer struct {
-// 	usecase usecase.CustomerInt
-// }
+import (
+	"errors"
+	"graphql/customer"
+	"net/http"
 
-// func NewHandlerCustomer(use usecase.CustomerInt) *handlerCustomer {
-// 	return &handlerCustomer{usecase: use}
-// }
+	"github.com/gin-gonic/gin"
+)
 
-// func (h *handlerCustomer) CreateCustomer(c *gin.Context) {
-// 	var customer repo.Customer
+type handlerCustomer struct {
+	usecase customer.CustomerInt
+}
 
-// 	c.ShouldBindJSON(&customer)
+func NewHandlerCustomer(use customer.CustomerInt) *handlerCustomer {
+	return &handlerCustomer{usecase: use}
+}
 
-// 	err := h.usecase.Register(customer)
+func (h *handlerCustomer) CreateCustomer(c *gin.Context) {
+	var customers customer.InputCustomer
 
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, errors.New("gagal"))
-// 		return
-// 	}
+	c.ShouldBindJSON(&customers)
+	if customers.Password != customers.ConfirmPassword {
+		c.JSON(http.StatusBadRequest, errors.New("password and confirmed password is different"))
+	}
 
-// 	c.JSON(http.StatusOK, nil)
+	customerSave := customer.Customer{}
+	customerSave.Name = customers.Name
+	customerSave.Email = customers.Email
+	customerSave.Password = customers.Password
 
-// }
+	err := h.usecase.Register(customerSave)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errors.New("failed to create customer"))
+		return
+	}
+
+	c.JSON(http.StatusOK, nil)
+
+}
+
+func (h *handlerCustomer) Login(c *gin.Context) {
+	var input customer.InputLogin
+
+	c.ShouldBindJSON(&input)
+
+	customer, err := h.usecase.LoginCustomer(input)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, errors.New("failed to login customer"))
+		return
+	}
+
+	response := APIResponse("success login", 200, "success", customer)
+
+	c.JSON(http.StatusOK, response)
+
+}

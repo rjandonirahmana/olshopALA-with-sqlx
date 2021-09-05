@@ -12,7 +12,8 @@ type repoTransaction struct {
 
 type RepoTransaction interface {
 	SumPriceBoughtById(id int) int
-	GetDetailProductByID(id int) Transactions
+	GetDetailProductByID(id int) (Transactions, error)
+	InserTransaction(t Transactions) error
 }
 
 func NewTransaction(db *sqlx.DB) *repoTransaction {
@@ -34,17 +35,17 @@ func (r *repoTransaction) SumPriceBoughtById(id int) int {
 
 }
 
-func (r *repoTransaction) GetDetailProductByID(id int) Transactions {
+func (r *repoTransaction) GetDetailTransaction(id int) (Transactions, error) {
 	querry := `SELECT * FROM transactions WHERE id = ?`
 	var transaction Transactions
 	err := r.db.Get(&transaction, querry, id)
 
 	if err != nil {
 		fmt.Println(err)
-		return Transactions{}
+		return Transactions{}, err
 	}
 
-	return transaction
+	return transaction, nil
 }
 
 func (r *repoTransaction) InserTransaction(t Transactions) error {

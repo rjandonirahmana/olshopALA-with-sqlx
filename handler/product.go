@@ -23,12 +23,12 @@ func (h *HandlerProduct) GetProductByCategory(c *gin.Context) {
 
 	products, err := h.service.GetProductCategory(category)
 	if err != nil {
-		response := APIResponse(err.Error(), http.StatusInternalServerError, "failed", nil)
+		response := APIResponse(err.Error(), http.StatusUnprocessableEntity, "failed", nil)
 		c.JSON(http.StatusUnprocessableEntity, response)
 		return
 	}
 
-	response := APIResponse("success", http.StatusOK, "products", products)
+	response := APIResponse("successfuly get list products", http.StatusOK, "products", products)
 	c.JSON(http.StatusOK, response)
 
 }
@@ -101,6 +101,32 @@ func (h *HandlerProduct) GetListProductShopCart(c *gin.Context) {
 		return
 	}
 	response := APIResponse("success", http.StatusOK, fmt.Sprintf("list product shop cart with id customer : %d and cart_id : %d", customer.ID, cartID), products)
+	c.JSON(http.StatusOK, response)
+
+}
+
+func (h *HandlerProduct) DeleteProductShopcart(c *gin.Context) {
+	shopcartid, err := strconv.Atoi((c.Request.FormValue("shopcart_id")))
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	productid, err := strconv.Atoi((c.Request.FormValue("product_id")))
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	customer := c.MustGet("currentCustomer").(customer.Customer)
+
+	productLeft, err := h.service.DeleteListOnshoppingCart(shopcartid, customer.ID, productid)
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusConflict, "failed", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	response := APIResponse("success", http.StatusOK, fmt.Sprintf("list product left on shoppping cart with id customer : %d and shopcart_id : %d", customer.ID, shopcartid), productLeft)
 	c.JSON(http.StatusOK, response)
 
 }

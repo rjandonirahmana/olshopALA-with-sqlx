@@ -1,14 +1,15 @@
 version: '3'
 services:
-    db:
+    database:
         container_name: mysql
         image: mysql
         ports:
-            - "3300:3306"
+            - "3300:3300"
         restart: always
   
         environment:
-            MYSQL_USER: u123
-            MYSQL_PASSWORD: u1234
-            MYSQL_ROOT_PASSWORD: u1234
+            MYSQL_ROOT_USER: root
+            MYSQL_USER: root
+            MYSQL_PASSWORD: 12345
+            MYSQL_ROOT_PASSWORD: 12345
             MYSQL_DATABASE: olshop

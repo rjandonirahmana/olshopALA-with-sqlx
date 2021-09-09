@@ -72,24 +72,15 @@ func (r *repository) GetLastID() (int, error) {
 func (r *repository) GetCustomerByID(id int) (Customer, error) {
 	querry := `SELECT * FROM customers WHERE id = ?`
 
-	var customerdb CustomerDB
+	var customer Customer
 
-	err := r.db.Get(&customerdb, querry, id)
+	err := r.db.Get(&customer, querry, id)
 	if err != nil {
 		return Customer{}, err
 	}
 
-	return Customer{
-		Name:      customerdb.Name.String,
-		ID:        int(customerdb.ID.Int32),
-		Email:     customerdb.Email.String,
-		Phone:     customerdb.Phone.String,
-		Password:  customerdb.Password.String,
-		Salt:      customerdb.Salt.String,
-		Avatar:    customerdb.Avatar.String,
-		CreatedAt: customerdb.CreatedAt.Time,
-		UpdatedAt: customerdb.UpdatedAt.Time,
-	}, nil
+	return customer, nil
+
 }
 
 func (r *repository) ChangeAvatar(avatarFile string, id int) error {

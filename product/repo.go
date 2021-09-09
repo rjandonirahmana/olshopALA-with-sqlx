@@ -23,6 +23,7 @@ type RepoProduct interface {
 	GetLastID() (int, error)
 	GetListCartByID(cartid int, customerid int) ([]Product, error)
 	CreateCart(customerID, id int) error
+	DeleteProductInShopCart(cart_id, customer_id, product_id int) error
 }
 
 func NewRepoProduct(db *sqlx.DB) *repoProduct {
@@ -195,11 +196,23 @@ func (r *repoProduct) GetListCartByID(cartid int, customerid int) ([]Product, er
 }
 
 func (r *repoProduct) DeleteProductInShopCart(cart_id, customer_id, product_id int) error {
-	querry := `DELETE FROM shopcart JOIN cart ON shopcart.cart_id = cart.id WHERE shopcart.cart_id = ? AND cart.customerID = ? AND shopcart.product_id = ?`
+	querry := `DELETE shopcart FROM shopcart JOIN cart ON shopcart.cart_id = cart.id WHERE shopcart.cart_id = ? AND cart.customerID = ? AND shopcart.product_id = ?`
 
-	sqlx := r.db.QueryRowx(querry, cart_id, customer_id, product_id)
-	if sqlx.Err() != nil {
-		return sqlx.Err()
+	_, err := r.db.Exec(querry, cart_id, customer_id, product_id)
+	if err != nil {
+		return err
 	}
 	return nil
+}
+
+func (r *repoProduct) SearchProducts(productname string) ([]Product, error) {
+	querry := `SELECT  FROM products WHERE LOWER(name) LIKE ?`
+
+	var products []Product
+	err := r.db.Select(&products, querry, "%"+productname+"%")
+
+	if err != nil {
+		return []Product{}, err
+	}
+	return products, nil
 }

@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	db, err := sqlx.Connect("mysql", "root:@(localhost:3306)/?parseTime=true")
+	db, err := sqlx.Connect("mysql", ":@(localhost:3306)/?parseTime=true")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -39,7 +39,8 @@ func main() {
 	c.PUT("/avatar", authMiddleWare(auth, customerserv), customerHandler.UpdateAvatar)
 	c.POST("/addcart", authMiddleWare(auth, customerserv), productHanlder.CreateShopCart)
 	c.POST("/addshopcart", authMiddleWare(auth, customerserv), productHanlder.InsertToShopCart)
-	c.GET("listshopcart", authMiddleWare(auth, customerserv), productHanlder.GetListProductShopCart)
+	c.GET("/listshopcart", authMiddleWare(auth, customerserv), productHanlder.GetListProductShopCart)
+	c.DELETE("/listshopcart", authMiddleWare(auth, customerserv), productHanlder.DeleteProductShopcart)
 
 	c.Run(":8080")
 }

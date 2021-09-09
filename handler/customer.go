@@ -51,7 +51,7 @@ func (h *handlerCustomer) CreateCustomer(c *gin.Context) {
 	}
 
 	response := APIResponse("account successfully created", http.StatusOK, fmt.Sprintf("success created token %s", token), customer)
-	c.JSON(http.StatusUnprocessableEntity, response)
+	c.JSON(http.StatusOK, response)
 
 }
 

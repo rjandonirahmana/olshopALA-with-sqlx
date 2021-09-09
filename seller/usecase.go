@@ -34,3 +34,5 @@ func (s *Service) Register(seller Seller) (Seller, error) {
 
 	return seller, nil
 }
+
+func (s *Service) LoginSeller()

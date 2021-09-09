@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"graphql/auth"
 	"graphql/customer"
+	"io/ioutil"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,7 +38,8 @@ func (h *handlerCustomer) CreateCustomer(c *gin.Context) {
 	customer, err := h.usecase.Register(customerSave)
 
 	if err != nil {
-		c.JSON(http.StatusBadRequest, errors.New("failed to create customer"))
+		respones := APIResponse("failed to create account", http.StatusOK, fmt.Sprintf("%v", err.Error()), nil)
+		c.JSON(http.StatusBadRequest, respones)
 		return
 	}
 
@@ -80,18 +81,12 @@ func (h *handlerCustomer) Login(c *gin.Context) {
 }
 
 func (h *handlerCustomer) UpdatePhoneCustomer(c *gin.Context) {
-	phone, err := strconv.ParseInt(c.Request.FormValue("phone"), 10, 64)
-
-	if err != nil {
-		response := APIResponse(err.Error(), http.StatusForbidden, "failed", nil)
-		c.JSON(http.StatusUnprocessableEntity, response)
-		return
-	}
+	phone := c.Request.FormValue("phone")
 
 	currentCustomer := c.MustGet("currentCustomer").(customer.Customer)
 	customerEmail := currentCustomer.Email
 
-	err = h.usecase.UpdateCustomerPhone(phone, customerEmail)
+	err := h.usecase.UpdateCustomerPhone(phone, customerEmail)
 	if err != nil {
 		response := APIResponse(err.Error(), http.StatusForbidden, "failed", nil)
 		c.JSON(http.StatusUnprocessableEntity, response)
@@ -105,8 +100,46 @@ func (h *handlerCustomer) UpdatePhoneCustomer(c *gin.Context) {
 		return
 	}
 
-	response := APIResponse("success login", 200, fmt.Sprintf("successfully update customer number %d", phone), updatedCustomer)
+	response := APIResponse("success login", 200, fmt.Sprintf("successfully update customer number %s", phone), updatedCustomer)
 
 	c.JSON(http.StatusOK, response)
 
+}
+
+func (h *handlerCustomer) UpdateAvatar(c *gin.Context) {
+	avatar, foto, err := c.Request.FormFile("avatar")
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	currentCustomer := c.MustGet("currentCustomer").(customer.Customer)
+
+	file, err := ioutil.ReadAll(avatar)
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	err = h.usecase.ChangeProfile(file, currentCustomer.Name, currentCustomer.ID)
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	path := fmt.Sprintf("images/%d-%s", currentCustomer.ID, currentCustomer.Email)
+
+	err = c.SaveUploadedFile(foto, path)
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusForbidden, "failed", nil)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	response := APIResponse("avatar", 200, fmt.Sprintf("successfully update avatar number %s", currentCustomer.Avatar), currentCustomer)
+
+	c.JSON(http.StatusOK, response)
 }

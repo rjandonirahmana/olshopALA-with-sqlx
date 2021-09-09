@@ -9,7 +9,7 @@ type Customer struct {
 	ID        int       `json:"id"`
 	Name      string    `json:"name" binding:"required"`
 	Email     string    `json:"email" binding:"required"`
-	Phone     int64     `json:"phone" binding:"required"`
+	Phone     string    `json:"phone" binding:"required"`
 	Password  string    `json:"password" binding:"required"`
 	Salt      string    `json:"salt"`
 	Avatar    string    `json:"avatar"`
@@ -20,7 +20,7 @@ type Customer struct {
 type CustomerDB struct {
 	ID        sql.NullInt32  `db:"id"`
 	Name      sql.NullString `db:"name"`
-	Phone     sql.NullInt64  `db:"phone"`
+	Phone     sql.NullString `db:"phone"`
 	Email     sql.NullString `db:"email"`
 	Password  sql.NullString `db:"password"`
 	Salt      sql.NullString `db:"salt"`

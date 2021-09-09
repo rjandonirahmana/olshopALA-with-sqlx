@@ -2,10 +2,15 @@ package customer
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 
+	"github.com/gabriel-vasile/mimetype"
 	"golang.org/x/crypto/bcrypt"
 )
+
+const AllowedExtensions = ".jpeg,.jpg"
 
 type ServiceCustomer struct {
 	repo Repository
@@ -14,15 +19,22 @@ type ServiceCustomer struct {
 type CustomerInt interface {
 	Register(customer Customer) (Customer, error)
 	LoginCustomer(input InputLogin) (Customer, error)
-	UpdateCustomerPhone(phone int64, email string) error
+	UpdateCustomerPhone(phone string, email string) error
 	GetCustomerByID(id int) (Customer, error)
+	IsEmailAvailable(email string) (bool, error)
+	ChangeProfile(profile []byte, name string, id int) error
 }
 
-func NewCustomerService(repository Repository) *ServiceCustomer {
-	return &ServiceCustomer{repo: repository}
+func NewCustomerService(repo Repository) *ServiceCustomer {
+	return &ServiceCustomer{repo: repo}
 }
 
 func (s *ServiceCustomer) Register(customer Customer) (Customer, error) {
+
+	_, err := s.IsEmailAvailable(customer.Email)
+	if err != nil {
+		return Customer{}, errors.New("email has been used")
+	}
 
 	customer.Salt = "salt"
 	customer.Password += customer.Salt
@@ -67,7 +79,7 @@ func (s *ServiceCustomer) LoginCustomer(input InputLogin) (Customer, error) {
 
 }
 
-func (s *ServiceCustomer) UpdateCustomerPhone(phone int64, email string) error {
+func (s *ServiceCustomer) UpdateCustomerPhone(phone string, email string) error {
 
 	_, err := s.repo.GetCustomerByEmail(email)
 	if err != nil {
@@ -90,4 +102,29 @@ func (s *ServiceCustomer) GetCustomerByID(id int) (Customer, error) {
 	}
 
 	return customer, nil
+}
+
+func (s *ServiceCustomer) IsEmailAvailable(email string) (bool, error) {
+	customer, _ := s.repo.GetCustomerByEmail(email)
+
+	if customer.Email == email {
+		return false, errors.New("email has been used")
+	}
+	return true, nil
+}
+
+func (s *ServiceCustomer) ChangeProfile(profile []byte, name string, id int) error {
+
+	mime := mimetype.Detect(profile)
+	if strings.Index(AllowedExtensions, mime.Extension()) == -1 {
+		return errors.New("File Type is not allowed, file type: " + mime.Extension())
+	}
+
+	profilesave := fmt.Sprintf("image/profile/%s,%s", name, mime.Extension())
+	err := s.repo.ChangeAvatar(profilesave, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

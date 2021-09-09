@@ -4,6 +4,7 @@ import (
 	"graphql/auth"
 	"graphql/customer"
 	"graphql/handler"
+	"graphql/product"
 	"log"
 	"net/http"
 	"strings"
@@ -15,20 +16,30 @@ import (
 )
 
 func main() {
-	db, err := sqlx.Connect("mysql", "root:12345@(localhost:3306)/olshopALA?parseTime=true")
+	db, err := sqlx.Connect("mysql", "root:@(localhost:3306)/?parseTime=true")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	auth := auth.NewService()
 	customerdb := customer.NewRepo(db)
+	productdb := product.NewRepoProduct(db)
 	customerserv := customer.NewCustomerService(customerdb)
+	productServ := product.NewService(productdb)
+
+	productHanlder := handler.NewProductHandler(productServ)
 	customerHandler := handler.NewHandlerCustomer(customerserv, auth)
 
 	c := gin.New()
+
+	c.GET("productCategory", productHanlder.GetProductByCategory)
 	c.POST("/register", customerHandler.CreateCustomer)
 	c.POST("/login", customerHandler.Login)
 	c.PUT("/phone", authMiddleWare(auth, customerserv), customerHandler.UpdatePhoneCustomer)
+	c.PUT("/avatar", authMiddleWare(auth, customerserv), customerHandler.UpdateAvatar)
+	c.POST("/addcart", authMiddleWare(auth, customerserv), productHanlder.CreateShopCart)
+	c.POST("/addshopcart", authMiddleWare(auth, customerserv), productHanlder.InsertToShopCart)
+	c.GET("listshopcart", authMiddleWare(auth, customerserv), productHanlder.GetListProductShopCart)
 
 	c.Run(":8080")
 }

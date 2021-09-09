@@ -6,7 +6,7 @@ type Seller struct {
 	ID        int       `json:"id"`
 	Name      string    `json:"name" binding:"required"`
 	Email     string    `json:"email" binding:"required"`
-	Phone     int64     `json:"phone" binding:"required"`
+	Phone     string    `json:"phone" binding:"required"`
 	Password  string    `json:"password" binding:"required"`
 	Salt      string    `json:"salt"`
 	Avatar    string    `json:"avatar"`

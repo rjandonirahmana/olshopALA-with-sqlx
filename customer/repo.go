@@ -12,11 +12,12 @@ type repository struct {
 
 type Repository interface {
 	RegisterUser(customer Customer) (Customer, error)
-	UpdateCustomerPhone(email string, number int64) error
+	UpdateCustomerPhone(email string, number string) error
 	GetCustomerByID(id int) (Customer, error)
 	ChangePassword(newPassword string, id int) error
 	GetCustomerByEmail(email string) (Customer, error)
 	GetLastID() (int, error)
+	ChangeAvatar(avatarFile string, id int) error
 }
 
 func NewRepo(db *sqlx.DB) *repository {
@@ -36,7 +37,7 @@ func (r *repository) RegisterUser(customer Customer) (Customer, error) {
 	return customer, nil
 }
 
-func (r *repository) UpdateCustomerPhone(email string, number int64) error {
+func (r *repository) UpdateCustomerPhone(email string, number string) error {
 
 	querry := `
 	UPDATE 
@@ -82,7 +83,7 @@ func (r *repository) GetCustomerByID(id int) (Customer, error) {
 		Name:      customerdb.Name.String,
 		ID:        int(customerdb.ID.Int32),
 		Email:     customerdb.Email.String,
-		Phone:     customerdb.Phone.Int64,
+		Phone:     customerdb.Phone.String,
 		Password:  customerdb.Password.String,
 		Salt:      customerdb.Salt.String,
 		Avatar:    customerdb.Avatar.String,
@@ -94,7 +95,7 @@ func (r *repository) GetCustomerByID(id int) (Customer, error) {
 func (r *repository) ChangeAvatar(avatarFile string, id int) error {
 	querry := `UPDATE customers SET avatar = ? WHERE id = ? `
 
-	_, err := r.db.Exec(querry, id)
+	_, err := r.db.Exec(querry, avatarFile, id)
 
 	if err != nil {
 		fmt.Println(err)

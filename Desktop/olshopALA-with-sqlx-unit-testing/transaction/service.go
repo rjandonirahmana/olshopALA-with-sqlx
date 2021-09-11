@@ -11,34 +11,49 @@ type ServiceTrans struct {
 }
 
 type ServiceTransInt interface {
-	CreateTransaction(idProduct int, customerID, quantity int) (Transactions, error)
+	CreateTransaction(customerID, cartID int) (Transactions, error)
 }
 
-func (s *ServiceTrans) CreateTransaction(idProduct, customerID, quantity int) (Transactions, error) {
-	idTrans, _ := s.repo.GetLastTransaction()
+func NewTransactionService(repo RepoTransaction, repoProduct product.RepoProduct) *ServiceTrans {
+	return &ServiceTrans{repo: repo, repoProduct: repoProduct}
+}
 
-	product, err := s.repoProduct.GetProductByID(idProduct)
+func (s *ServiceTrans) CreateTransaction(customerID, cartID int) (Transactions, error) {
+	products, err := s.repoProduct.GetListCartByID(cartID, customerID)
 	if err != nil {
 		return Transactions{}, err
 	}
-	t := Transactions{}
-	t.ID = idTrans + 1
-	t.ID_product = product.ID
-	t.Price = product.Price
-	t.CreatedAt = time.Now()
-	t.CustomerID = customerID
-	t.Quantity = quantity
+
+	idTrans, err := s.repo.GetLastTransaction()
+	if err != nil {
+		return Transactions{}, err
+	}
+
+	totalPrice := int32(0)
+	for _, v := range products {
+		totalPrice += v.Price
+	}
+
+	t := Transactions{
+		ID:         idTrans,
+		CustomerID: customerID,
+		Price:      totalPrice,
+		CreatedAt:  time.Now(),
+		MaxTime:    time.Now().Add(time.Hour * 5),
+		ShopCartID: cartID,
+		PaymentID:  1,
+	}
 
 	err = s.repo.InserTransaction(t)
 	if err != nil {
 		return Transactions{}, err
 	}
 
-	trans, err := s.repo.GetDetailTransaction(t.ID)
+	createdTransaction, err := s.repo.GetDetailTransaction(idTrans)
 	if err != nil {
 		return Transactions{}, err
 	}
 
-	return trans, nil
+	return createdTransaction, nil
 
 }

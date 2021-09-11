@@ -131,7 +131,7 @@ func (r *repoProduct) GetShopCartIDCustomer(customerID, shopcartID int) (Cart, e
 }
 
 func (r *repoProduct) DeleteProductInShopCart(cart_id, customer_id, product_id int) error {
-	querry := `DELETE shopcart.* FROM shopcart JOIN cart ON shopcart.cart_id = cart.id WHERE shopcart.cart_id = ? AND cart.customerID = ? AND shopcart.product_id = ? LIMIT`
+	querry := `DELETE shopcart.* FROM shopcart JOIN cart ON shopcart.cart_id = cart.id WHERE shopcart.cart_id = ? AND cart.customerID = ? AND shopcart.product_id = ? LIMIT 1`
 
 	result := r.db.QueryRow(querry, cart_id, customer_id, product_id)
 	if result.Err() != nil {

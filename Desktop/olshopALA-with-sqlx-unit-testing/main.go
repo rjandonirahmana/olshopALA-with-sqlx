@@ -7,6 +7,7 @@ import (
 	"olshop/customer"
 	"olshop/handler"
 	"olshop/product"
+	"olshop/transaction"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -16,7 +17,7 @@ import (
 )
 
 func main() {
-	db, err := sqlx.Connect("mysql", "root:12345@(localhost:3306)/olshopALA?parseTime=true")
+	db, err := sqlx.Connect("mysql", "root:@(localhost:3306)/?parseTime=true")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -24,11 +25,15 @@ func main() {
 	auth := auth.NewService()
 	customerdb := customer.NewRepo(db)
 	productdb := product.NewRepoProduct(db)
+	transactiondb := transaction.NewTransactionRepo(db)
+
 	customerserv := customer.NewCustomerService(customerdb)
 	productServ := product.NewService(productdb)
+	transactionServ := transaction.NewTransactionService(transactiondb, productdb)
 
 	productHanlder := handler.NewProductHandler(productServ)
 	customerHandler := handler.NewHandlerCustomer(customerserv, auth)
+	transactionHandler := handler.NewTransactionHandler(transactionServ)
 
 	c := gin.Default()
 	api := c.Group("/api/v1")
@@ -42,6 +47,7 @@ func main() {
 	api.POST("/insertshopcart", authMiddleWare(auth, customerserv), productHanlder.InsertToShopCart)
 	api.GET("/listshopcart", authMiddleWare(auth, customerserv), productHanlder.GetListProductShopCart)
 	api.DELETE("/productshop", authMiddleWare(auth, customerserv), productHanlder.DeleteProductShopcart)
+	api.POST("/transaction", authMiddleWare(auth, customerserv), transactionHandler.CreateTransaction)
 
 	c.Run(":8080")
 }

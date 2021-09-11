@@ -20,6 +20,7 @@ type RepoProduct interface {
 	GetListCartByID(cartid int, customerid int) ([]Product, error)
 	CreateCart(customerID, id int) error
 	GetShopCartIDCustomer(customerID, shopcartID int) (Cart, error)
+	DeleteProductInShopCart(cart_id, customer_id, product_id int) error
 }
 
 func NewRepoProduct(db *sqlx.DB) *repoProduct {
@@ -113,16 +114,6 @@ func (r *repoProduct) GetListCartByID(cartid int, customerid int) ([]Product, er
 	return products, nil
 }
 
-func (r *repoProduct) DeleteProductInShopCart(cart_id, customer_id, product_id int) error {
-	querry := `DELETE FROM shopcart JOIN cart ON shopcart.cart_id = cart.id WHERE shopcart.cart_id = ? AND cart.customerID = ? AND shopcart.product_id = ?`
-
-	sqlx := r.db.QueryRowx(querry, cart_id, customer_id, product_id)
-	if sqlx.Err() != nil {
-		return sqlx.Err()
-	}
-	return nil
-}
-
 func (r *repoProduct) GetShopCartIDCustomer(customerID, shopcartID int) (Cart, error) {
 
 	querry := `SELECT * FROM cart WHERE customerID = ? AND id = ?`
@@ -137,4 +128,15 @@ func (r *repoProduct) GetShopCartIDCustomer(customerID, shopcartID int) (Cart, e
 	}
 
 	return cart, nil
+}
+
+func (r *repoProduct) DeleteProductInShopCart(cart_id, customer_id, product_id int) error {
+	querry := `DELETE shopcart.* FROM shopcart JOIN cart ON shopcart.cart_id = cart.id WHERE shopcart.cart_id = ? AND cart.customerID = ? AND shopcart.product_id = ? LIMIT`
+
+	result := r.db.QueryRow(querry, cart_id, customer_id, product_id)
+	if result.Err() != nil {
+		return result.Err()
+	}
+
+	return nil
 }

@@ -104,3 +104,29 @@ func (h *HandlerProduct) GetListProductShopCart(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 
 }
+
+func (h *HandlerProduct) DeleteProductShopcart(c *gin.Context) {
+	shopcartid, err := strconv.Atoi((c.Request.FormValue("shopcart_id")))
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	productid, err := strconv.Atoi((c.Request.FormValue("product_id")))
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	customer := c.MustGet("currentCustomer").(customer.Customer)
+
+	productLeft, err := h.service.DeleteListOnshoppingCart(shopcartid, customer.ID, productid)
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusConflict, "failed", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+	response := APIResponse("success", http.StatusOK, fmt.Sprintf("list product left on shoppping cart with id customer : %d and shopcart_id : %d", customer.ID, shopcartid), productLeft)
+	c.JSON(http.StatusOK, response)
+
+}

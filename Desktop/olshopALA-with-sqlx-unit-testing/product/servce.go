@@ -11,6 +11,7 @@ type ServiceProductInt interface {
 	AddShoppingCart(customerid int) (int, error)
 	InsertProductByCartID(customerid, productid, cartid int) (Product, error)
 	GetListShopCart(cartid int, customerid int) ([]Product, error)
+	DeleteListOnshoppingCart(cartid, customerid, productid int) ([]Product, error)
 }
 
 func NewService(repo RepoProduct) *serviceProduct {
@@ -78,4 +79,18 @@ func (s *serviceProduct) GetListShopCart(cartid int, customerid int) ([]Product,
 	}
 
 	return products, nil
+}
+
+func (s *serviceProduct) DeleteListOnshoppingCart(cartid, customerid, productid int) ([]Product, error) {
+	err := s.repo.DeleteProductInShopCart(cartid, customerid, productid)
+	if err != nil {
+		return []Product{}, err
+	}
+
+	productLeft, err := s.GetListShopCart(cartid, customerid)
+	if err != nil {
+		return []Product{}, err
+	}
+
+	return productLeft, nil
 }

@@ -41,6 +41,7 @@ func main() {
 	api.POST("/addcart", authMiddleWare(auth, customerserv), productHanlder.CreateShopCart)
 	api.POST("/insertshopcart", authMiddleWare(auth, customerserv), productHanlder.InsertToShopCart)
 	api.GET("/listshopcart", authMiddleWare(auth, customerserv), productHanlder.GetListProductShopCart)
+	api.DELETE("/productshop", authMiddleWare(auth, customerserv), productHanlder.DeleteProductShopcart)
 
 	c.Run(":8080")
 }

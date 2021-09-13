@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
@@ -179,60 +180,60 @@ func TestLogin(t *testing.T) {
 	}
 }
 
-// func TestUpdatePhoneCustomer(t *testing.T) {
-// 	// Testcases list
-// 	testCases := []struct {
-// 		testName   string
-// 		email      string
-// 		phone      string
-// 		expectCode int
-// 		expectMsg  string
-// 	}{
-// 		{
-// 			testName:   "success",
-// 			email:      "jon@k.k",
-// 			phone:      "0812345",
-// 			expectCode: http.StatusUnprocessableEntity,
-// 			expectMsg:  "successfully udpate",
-// 		},
-// 		{
-// 			testName:   "fail email not found",
-// 			email:      "jin@k.k",
-// 			phone:      "0812345",
-// 			expectCode: http.StatusUnprocessableEntity,
-// 			expectMsg:  "email not found",
-// 		},
-// 	}
+func TestUpdatePhoneCustomer(t *testing.T) {
+	// Testcases list
+	testCases := []struct {
+		testName   string
+		email      string
+		phone      string
+		expectCode int
+		expectMsg  string
+	}{
+		{
+			testName:   "success",
+			email:      "jon@k.k",
+			phone:      `0812345`,
+			expectCode: http.StatusUnprocessableEntity,
+			expectMsg:  "successfully udpate",
+		},
+		{
+			testName:   "fail email not found",
+			email:      "jin@k.k",
+			phone:      `0812345`,
+			expectCode: http.StatusUnprocessableEntity,
+			expectMsg:  "email not found",
+		},
+	}
 
-// 	// r := setupRouter()
-// 	// setting handler
-// 	db, _ := connectDB()
-// 	r := customer.NewRepo(db)
-// 	s := customer.NewCustomerService(r)
-// 	h := handler.NewHandlerCustomer(s, nil)
+	// r := setupRouter()
+	// setting handler
+	db, _ := connectDB()
+	r := customer.NewRepo(db)
+	s := customer.NewCustomerService(r)
+	h := handler.NewHandlerCustomer(s, nil)
 
-// 	for _, testCase := range testCases {
-// 		currentCustomer := customer.Customer{
-// 			Email: testCase.email,
-// 		}
+	for _, testCase := range testCases {
+		currentCustomer := customer.Customer{
+			Email: testCase.email,
+		}
 		
-// 		reqBody := url.Values{}
-// 		reqBody.Set("phone", testCase.phone)
-
-// 		res := httptest.NewRecorder()
+		reqBody := fmt.Sprintf(`phone=%s`, testCase.phone)
+		res := httptest.NewRecorder()
 		
-// 		req := httptest.NewRequest(http.MethodPut, "/phone", strings.NewReader(reqBody.Encode()))
-// 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		req := httptest.NewRequest(http.MethodPut, "/phone", strings.NewReader(reqBody))
 		
-// 		c, r := gin.CreateTestContext(res)
-// 		r.ServeHTTP(res, req)
-// 		r.PUT("/phone", h.UpdatePhoneCustomer)
-// 		c.Set("currentCustomer", currentCustomer)
-// 		h.UpdatePhoneCustomer(c)
+		c, r := gin.CreateTestContext(res)
+		c.Request = req
+		c.Request.Header.Add("Content-Type", binding.MIMEPOSTForm)
+		c.Set("currentCustomer", currentCustomer)
+		r.ServeHTTP(res, req)
+		r.PUT("/phone", h.UpdatePhoneCustomer)
+		h.UpdatePhoneCustomer(c)
+		fmt.Println(res.Body.String())
+		
+		assert.Equal(t, testCase.expectCode, res.Code)
+		assert.True(t, strings.Contains(res.Body.String(), testCase.email))
+		assert.True(t, strings.Contains(res.Body.String(), testCase.expectMsg))
+	}
 
-// 		assert.Equal(t, testCase.expectCode, res.Code)
-// 		assert.True(t, strings.Contains(res.Body.String(), testCase.email))
-// 		assert.True(t, strings.Contains(res.Body.String(), testCase.expectMsg))
-// 	}
-
-// }
+}

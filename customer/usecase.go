@@ -196,5 +196,4 @@ func (s *ServiceCustomer) DeleteCustomer(id int, password string) error {
 	}
 
 	return nil
-
 }

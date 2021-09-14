@@ -23,14 +23,14 @@ func NewTransactionRepo(db *sqlx.DB) *repoTransaction {
 
 func (r *repoTransaction) GetDetailTransaction(id int) (Transactions, error) {
 	querry := `SELECT * FROM transactions WHERE id = ?`
-	var transaction Transactions
-	err := r.db.Get(&transaction, querry, id)
+	var trans Transactions
+	err := r.db.Get(&trans, querry, id)
 
 	if err != nil {
 		return Transactions{}, err
 	}
 
-	return transaction, nil
+	return trans, nil
 }
 
 func (r *repoTransaction) InserTransaction(t Transactions) error {
@@ -51,16 +51,25 @@ func (r *repoTransaction) InserTransaction(t Transactions) error {
 func (r *repoTransaction) CheckTransaction(cartid int) (int, error) {
 	querry := `SELECT id FROM transactions WHERE shopcart_id = ? AND max_time > ?`
 
-	var value int
 	//select id transacttion biar di passs ke detail transaction kalo ada
-	err := r.db.Get(&value, querry, cartid, time.Now())
 
-	if err == nil && value == 0 {
+	row, err := r.db.Queryx(querry, cartid, time.Now())
+	var value int
+
+	for row.Next() {
+		err = row.Scan(&value)
+		if err != nil {
+			return 0, err
+		}
+	}
+	if value == 0 {
 		return 0, nil
 	}
-	if err != nil {
+	defer row.Close()
+
+	if row.Err() != nil {
 		return 0, err
 	}
-	return value, nil
 
+	return value, nil
 }

@@ -157,3 +157,9 @@ func TestCreateCustomer(t *testing.T) {
 // 	}
 
 // }
+
+// func TestUpdatePassword(t *testing.T) {
+// 	testCases :=  []struct {
+
+// 	}
+// }

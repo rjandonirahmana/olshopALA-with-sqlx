@@ -51,7 +51,7 @@ func (s *ServiceTrans) CreateTransaction(customer customer.Customer, cartID int)
 	}
 
 	t := Transactions{
-		ID:         0,
+		ID:         checkid,
 		CustomerID: customer.ID,
 		Price:      totalPrice,
 		CreatedAt:  time.Now(),

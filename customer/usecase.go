@@ -24,7 +24,7 @@ type CustomerInt interface {
 	UpdateCustomerPhone(phone string, email string) error
 	GetCustomerByID(id int) (Customer, error)
 	IsEmailAvailable(email string) (bool, error)
-	ChangeProfile(profile []byte, name string, id int) error
+	ChangeProfile(profile []byte, name string, id int) (Customer, error)
 	ChangePassword(oldpassword, newPassword string, id int) (Customer, error)
 	DeleteCustomer(id int, password string) error
 }
@@ -118,20 +118,24 @@ func (s *ServiceCustomer) IsEmailAvailable(email string) (bool, error) {
 	return true, nil
 }
 
-func (s *ServiceCustomer) ChangeProfile(profile []byte, name string, id int) error {
+func (s *ServiceCustomer) ChangeProfile(profile []byte, name string, id int) (Customer, error) {
 
 	mime := mimetype.Detect(profile)
 	if strings.Index(AllowedExtensions, mime.Extension()) == -1 {
-		return errors.New("File Type is not allowed, file type: " + mime.Extension())
+		return Customer{}, errors.New("File Type is not allowed, file type: " + mime.Extension())
 	}
 
 	profilesave := fmt.Sprintf("image/profile/%s,%s", name, mime.Extension())
 	err := s.repo.ChangeAvatar(profilesave, id)
 	if err != nil {
-		return err
+		return Customer{}, err
+	}
+	customer, err := s.repo.GetCustomerByID(id)
+	if err != nil {
+		return Customer{}, err
 	}
 
-	return nil
+	return customer, nil
 }
 
 func RandStringBytes(n int) string {

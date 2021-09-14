@@ -128,7 +128,7 @@ func (h *handlerCustomer) UpdateAvatar(c *gin.Context) {
 		return
 	}
 
-	err = h.usecase.ChangeProfile(file, currentCustomer.Email, currentCustomer.ID)
+	currentCustomer, err = h.usecase.ChangeProfile(file, currentCustomer.Email, currentCustomer.ID)
 	if err != nil {
 		response := APIResponse(err.Error(), http.StatusInternalServerError, "failed", nil)
 		c.JSON(http.StatusUnprocessableEntity, response)

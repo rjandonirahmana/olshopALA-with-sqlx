@@ -124,7 +124,7 @@ func TestCreateCustomer(t *testing.T) {
 			email:           "jon@l.l",
 			password:        "jojo",
 			confirmPassword: "jiji",
-			expectCode:      http.StatusBadRequest,
+			expectCode:      http.StatusUnprocessableEntity,
 			expectMsg:       "password and confirm password is different",
 		},
 	}
@@ -160,7 +160,7 @@ func TestLogin(t *testing.T) {
 			testName:   "success",
 			email:      "jon@k.k",
 			password:   "jiji",
-			expectCode: http.StatusUnprocessableEntity,
+			expectCode: http.StatusOK,
 			expectMsg:  "success login",
 		},
 		{
@@ -209,7 +209,7 @@ func TestUpdatePhoneCustomer(t *testing.T) {
 			testName:   "success",
 			email:      "jon@k.k",
 			phone:      `0812345`,
-			expectCode: http.StatusUnprocessableEntity,
+			expectCode: http.StatusOK,
 			expectMsg:  "successfully udpate",
 		},
 		{
@@ -221,7 +221,6 @@ func TestUpdatePhoneCustomer(t *testing.T) {
 		},
 	}
 
-	// r := setupRouter()
 	// setting handler
 	auth := auth.NewService()
 	db, _ := connectDB()

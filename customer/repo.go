@@ -2,6 +2,7 @@ package customer
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -16,8 +17,8 @@ type Repository interface {
 	GetCustomerByID(id int) (Customer, error)
 	ChangePassword(newPassword string, id int) error
 	GetCustomerByEmail(email string) (Customer, error)
-	GetLastID() (int, error)
 	ChangeAvatar(avatarFile string, id int) error
+	DeleteCustomer(id int) error
 }
 
 func NewRepo(db *sqlx.DB) *repository {
@@ -43,12 +44,13 @@ func (r *repository) UpdateCustomerPhone(email string, number string) error {
 	UPDATE 
 		customers 
 	SET 
-		phone = ? 
+		phone = ?, 
+		updated_at = ?
 	WHERE 
 		email = ?
 	`
 
-	_, err := r.db.Exec(querry, number, email)
+	_, err := r.db.Exec(querry, number, time.Now(), email)
 
 	if err != nil {
 		return err
@@ -57,45 +59,23 @@ func (r *repository) UpdateCustomerPhone(email string, number string) error {
 	return nil
 }
 
-func (r *repository) GetLastID() (int, error) {
-	querry := `SELECT id FROM customers WHERE id = (SELECT MAX(id) FROM customers)`
-
-	var value int
-	err := r.db.Get(&value, querry)
-	if err != nil {
-		return 0, err
-	}
-	return value, nil
-
-}
-
 func (r *repository) GetCustomerByID(id int) (Customer, error) {
 	querry := `SELECT * FROM customers WHERE id = ?`
 
-	var customerdb CustomerDB
+	var customer Customer
 
-	err := r.db.Get(&customerdb, querry, id)
+	err := r.db.Get(&customer, querry, id)
 	if err != nil {
 		return Customer{}, err
 	}
 
-	return Customer{
-		Name:      customerdb.Name.String,
-		ID:        int(customerdb.ID.Int32),
-		Email:     customerdb.Email.String,
-		Phone:     customerdb.Phone.String,
-		Password:  customerdb.Password.String,
-		Salt:      customerdb.Salt.String,
-		Avatar:    customerdb.Avatar.String,
-		CreatedAt: customerdb.CreatedAt.Time,
-		UpdatedAt: customerdb.UpdatedAt.Time,
-	}, nil
+	return customer, nil
 }
 
 func (r *repository) ChangeAvatar(avatarFile string, id int) error {
-	querry := `UPDATE customers SET avatar = ? WHERE id = ? `
+	querry := `UPDATE customers SET avatar = ?, updated_at = ? WHERE id = ? `
 
-	_, err := r.db.Exec(querry, avatarFile, id)
+	_, err := r.db.Exec(querry, avatarFile, time.Now(), id)
 
 	if err != nil {
 		fmt.Println(err)
@@ -106,9 +86,9 @@ func (r *repository) ChangeAvatar(avatarFile string, id int) error {
 }
 
 func (r *repository) ChangePassword(newPassword string, id int) error {
-	querry := `UPDATE customers SET password = ? WHERE id = ? `
+	querry := `UPDATE customers SET password = ?, updated_at = ? WHERE id = ? `
 
-	_, err := r.db.Exec(querry, newPassword, id)
+	_, err := r.db.Exec(querry, newPassword, time.Now(), id)
 
 	if err != nil {
 		fmt.Println(err)
@@ -129,4 +109,15 @@ func (r *repository) GetCustomerByEmail(email string) (Customer, error) {
 	}
 
 	return customer, nil
+}
+
+func (r *repository) DeleteCustomer(id int) error {
+	querry := `DELETE FROM customers WHERE id = ?`
+
+	_, err := r.db.Exec(querry, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

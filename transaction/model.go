@@ -4,9 +4,10 @@ import "time"
 
 type Transactions struct {
 	ID         int       `db:"id" json:"id"`
-	ID_product int       `db:"product_id" json:"product_id"`
 	CustomerID int       `db:"customer_id" json:"customer_id"`
-	Quantity   int       `db:"quantity" json:"quantity"`
 	Price      int32     `db:"price" json:"price"`
-	CreatedAt  time.Time `db:"created_at"`
+	CreatedAt  time.Time `db:"created_at" json:"created_at"`
+	MaxTime    time.Time `db:"max_time" json:"time_limit"`
+	ShopCartID int       `db:"shopcart_id" json:"shopcart_id"`
+	PaymentID  int       `db:"payment_id" json:"payment_id"`
 }

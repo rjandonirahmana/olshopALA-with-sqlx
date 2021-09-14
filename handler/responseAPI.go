@@ -11,6 +11,12 @@ type Meta struct {
 	Status  string `json:"status"`
 }
 
+type ResponseToken struct {
+	Meta  Meta        `json:"meta"`
+	Data  interface{} `json:"data"`
+	Token string      `json:"token"`
+}
+
 func APIResponse(message string, code int, status string, data interface{}) Response {
 	meta := Meta{
 		Message: message,
@@ -21,6 +27,22 @@ func APIResponse(message string, code int, status string, data interface{}) Resp
 	NewRensponse := Response{
 		Meta: meta,
 		Data: data,
+	}
+
+	return NewRensponse
+}
+
+func ResponseAPIToken(message string, code int, status string, data interface{}, GetToken string) ResponseToken {
+	meta := Meta{
+		Message: message,
+		Code:    code,
+		Status:  status,
+	}
+
+	NewRensponse := ResponseToken{
+		Meta:  meta,
+		Data:  data,
+		Token: GetToken,
 	}
 
 	return NewRensponse

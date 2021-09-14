@@ -1,12 +1,13 @@
 package main
 
 import (
-	"graphql/auth"
-	"graphql/customer"
-	"graphql/handler"
-	"graphql/product"
 	"log"
 	"net/http"
+	"olshop/auth"
+	"olshop/customer"
+	"olshop/handler"
+	"olshop/product"
+	"olshop/transaction"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -16,30 +17,39 @@ import (
 )
 
 func main() {
-	db, err := sqlx.Connect("mysql", "root:@(localhost:3306)/?parseTime=true")
+	db, err := sqlx.Connect("mysql", "root:12345@(localhost:3306)/olshopALA?parseTime=true")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	auth := auth.NewService()
-	customerdb := customer.NewRepo(db)
-	productdb := product.NewRepoProduct(db)
+	transactiondb := transaction.NewTransactionRepo(db)
+
 	customerserv := customer.NewCustomerService(customerdb)
 	productServ := product.NewService(productdb)
+	transactionServ := transaction.NewTransactionService(transactiondb, productdb)
 
 	productHanlder := handler.NewProductHandler(productServ)
 	customerHandler := handler.NewHandlerCustomer(customerserv, auth)
+	transactionHandler := handler.NewTransactionHandler(transactionServ)
 
-	c := gin.New()
+	c := gin.Default()
+	api := c.Group("/api/v1")
 
-	c.GET("productCategory", productHanlder.GetProductByCategory)
-	c.POST("/register", customerHandler.CreateCustomer)
-	c.POST("/login", customerHandler.Login)
-	c.PUT("/phone", authMiddleWare(auth, customerserv), customerHandler.UpdatePhoneCustomer)
-	c.PUT("/avatar", authMiddleWare(auth, customerserv), customerHandler.UpdateAvatar)
-	c.POST("/addcart", authMiddleWare(auth, customerserv), productHanlder.CreateShopCart)
-	c.POST("/addshopcart", authMiddleWare(auth, customerserv), productHanlder.InsertToShopCart)
-	c.GET("listshopcart", authMiddleWare(auth, customerserv), productHanlder.GetListProductShopCart)
+	api.GET("/productcategory", productHanlder.GetProductByCategory)
+	api.POST("/register", customerHandler.CreateCustomer)
+	api.POST("/login", customerHandler.Login)
+	api.PUT("/phone", authMiddleWare(auth, customerserv), customerHandler.UpdatePhoneCustomer)
+	api.PUT("/avatar", authMiddleWare(auth, customerserv), customerHandler.UpdateAvatar)
+	api.PUT("password", authMiddleWare(auth, customerserv), customerHandler.UpdatePassword)
+	api.DELETE("/account", authMiddleWare(auth, customerserv), customerHandler.DeleteAccount)
+	api.POST("/addcart", authMiddleWare(auth, customerserv), productHanlder.CreateShopCart)
+
+	api.POST("/insertshopcart", authMiddleWare(auth, customerserv), productHanlder.InsertToShopCart)
+	api.GET("/listshopcart", authMiddleWare(auth, customerserv), productHanlder.GetListProductShopCart)
+	api.GET("/shopcartcustomer", authMiddleWare(auth, customerserv), productHanlder.GetAllCartCustomer)
+	api.PUT("/decreaseproduct", authMiddleWare(auth, customerserv), productHanlder.DecreaseQuantity)
+	api.DELETE("/productshopcart", authMiddleWare(auth, customerserv), productHanlder.DeleteProductShopcart)
+	api.POST("/transaction", authMiddleWare(auth, customerserv), transactionHandler.CreateTransaction)
 
 	c.Run(":8080")
 }

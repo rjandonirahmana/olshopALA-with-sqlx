@@ -12,7 +12,6 @@ type Repo struct {
 
 type RepoInt interface {
 	CreateSeller(seller Seller) (Seller, error)
-	GetLastID() (int, error)
 	ChangePassword(newPassword string, id int) error
 	GetSellerByEmail(email string) (Seller, error)
 }
@@ -27,18 +26,6 @@ func (r *Repo) CreateSeller(seller Seller) (Seller, error) {
 	}
 
 	return seller, nil
-}
-
-func (r *Repo) GetLastID() (int, error) {
-	querry := `SELECT id FROM seller WHERE id = (SELECT MAX(id) FROM seller)`
-
-	var value int
-	err := r.db.Get(&value, querry)
-	if err != nil {
-		return 0, err
-	}
-	return value, nil
-
 }
 
 func (r *Repo) ChangePassword(newPassword string, id int) error {

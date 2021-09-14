@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"graphql/auth"
-	"graphql/customer"
-	"graphql/handler"
-	"graphql/product"
+	"olshop/auth"
+	"olshop/customer"
+	"olshop/handler"
+	"olshop/product"
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"olshop/transaction"
 	"os"
 	"strings"
 	"testing"
@@ -56,22 +57,35 @@ func setupRouter() *gin.Engine {
 	auth := auth.NewService()
 	customerdb := customer.NewRepo(db)
 	productdb := product.NewRepoProduct(db)
+	transactiondb := transaction.NewTransactionRepo(db)
+
 	customerserv := customer.NewCustomerService(customerdb)
 	productServ := product.NewService(productdb)
+	transactionServ := transaction.NewTransactionService(transactiondb, productdb)
 
 	productHanlder := handler.NewProductHandler(productServ)
 	customerHandler := handler.NewHandlerCustomer(customerserv, auth)
+	transactionHandler := handler.NewTransactionHandler(transactionServ)
 
 	gin.SetMode(gin.TestMode)
 	c := gin.Default()
-	c.GET("productCategory", productHanlder.GetProductByCategory)
-	c.POST("/register", customerHandler.CreateCustomer)
-	c.POST("/login", customerHandler.Login)
-	c.PUT("/phone", customerHandler.UpdatePhoneCustomer)
-	c.PUT("/avatar", customerHandler.UpdateAvatar)
-	c.POST("/addcart", productHanlder.CreateShopCart)
-	c.POST("/addshopcart", productHanlder.InsertToShopCart)
-	c.GET("listshopcart", productHanlder.GetListProductShopCart)
+	api := c.Group("/api/v1")
+
+	api.GET("/productcategory", productHanlder.GetProductByCategory)
+	api.POST("/register", customerHandler.CreateCustomer)
+	api.POST("/login", customerHandler.Login)
+	api.PUT("/phone", customerHandler.UpdatePhoneCustomer)
+	api.PUT("/avatar", customerHandler.UpdateAvatar)
+	api.PUT("password", customerHandler.UpdatePassword)
+	api.DELETE("/account", customerHandler.DeleteAccount)
+	api.POST("/addcart", productHanlder.CreateShopCart)
+
+	api.POST("/insertshopcart", productHanlder.InsertToShopCart)
+	api.GET("/listshopcart", productHanlder.GetListProductShopCart)
+	api.GET("/shopcartcustomer", productHanlder.GetAllCartCustomer)
+	api.PUT("/decreaseproduct", productHanlder.DecreaseQuantity)
+	api.DELETE("/productshopcart", productHanlder.DeleteProductShopcart)
+	api.POST("/transaction", transactionHandler.CreateTransaction)
 
 	return c
 }

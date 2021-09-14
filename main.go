@@ -22,6 +22,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	auth := auth.NewService()
+	customerdb := customer.NewRepo(db)
+	productdb := product.NewRepoProduct(db)
 	transactiondb := transaction.NewTransactionRepo(db)
 
 	customerserv := customer.NewCustomerService(customerdb)

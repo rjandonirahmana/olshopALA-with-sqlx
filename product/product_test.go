@@ -10,12 +10,12 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
@@ -23,26 +23,21 @@ import (
 )
 
 func LoadEnv() {
-	err := godotenv.Load(".env")
+	err := godotenv.Load("../.env")
 	if err != nil {
 		log.Fatalf("Error loading environment variables")
 		os.Exit(1)
 	}
 }
 
-// func TestMain(m *testing.M) {
-// 	setup()
-// 	gin.SetMode(gin.TestMode)
-// 	os.Exit(m.Run())
-// }
-
-func connectDB(dbName string) (*sqlx.DB, error) {
-	conn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local",
+func connectDB() (*sqlx.DB, error) {
+	LoadEnv()
+	conn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=True",
 		os.Getenv("DB_username"),
 		os.Getenv("DB_password"),
 		os.Getenv("DB_host"),
 		os.Getenv("DB_port"),
-		dbName)
+		os.Getenv("DB_name"))
 	db, err := sqlx.Connect("mysql", conn)
 	if err != nil {
 		return nil, err
@@ -50,77 +45,7 @@ func connectDB(dbName string) (*sqlx.DB, error) {
 	return db, nil
 }
 
-// func setup() {
-// 	// Create database connection
-// 	LoadEnv()
-// 	db, err := connectDB("")
-// 	if err != nil {
-// 		log.Printf("Error %s when opening DB", err)
-// 		return
-// 	}
-
-// 	dbname := os.Getenv("DB_name")
-
-// 	// Cleaning database before testing
-// 	db.Exec("DROP DATABASE IF EXISTS " + dbname)
-
-// 	// Create test database
-// 	_, err = db.Exec("CREATE DATABASE IF NOT EXISTS " + dbname)
-// 	if err != nil {
-// 		log.Printf("Error %s when creating DB\n", err)
-// 		return
-// 	}
-// 	db.Close()
-
-// 	// Create database connection
-// 	db, err = connectDB(dbname)
-// 	if err != nil {
-// 		log.Printf("Error %s when opening DB", err)
-// 		return
-// 	}
-
-// 	// Create table
-// 	db.MustExec(`CREATE TABLE products(
-// 							name varchar(30),
-// 							id int,
-// 							price int32,
-// 							category_id int,
-// 							product_images )`)
-// 	// if err != nil {
-// 	// 	log.Printf("Error %s when creating table", err)
-// 	// 	return
-// 	// }
-
-// 	// Insert dummy data
-// 	customer := customer.Customer{}
-// 	customer.ID = 1
-// 	customer.Name = "joni"
-// 	customer.Email = "jon@j.j"
-// 	customer.Password = "jojo"
-// 	customer.CreatedAt = time.Now()
-// 	customer.UpdatedAt = time.Now()
-
-// 	_, err = db.Exec(`INSERT INTO customers
-// 				(id, name, email, password, created_at, updated_at)
-// 				VALUES (?, ?, ?, ?, ?, ?)`,
-// 		customer.ID, customer.Name, customer.Email,
-// 		customer.Password, customer.CreatedAt, customer.UpdatedAt)
-// 	if err != nil {
-// 		log.Printf("Error %s when inserting dummy data", err)
-// 	}
-// }
-
 func TestGetProductCategory(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	LoadEnv()
-	// Create database connection
-	dbname := os.Getenv("DB_name")
-	db, err := connectDB(dbname)
-	if err != nil {
-		log.Printf("Error %s when opening DB", err)
-		return
-	}
-
 	// Testcases list
 	testCases := []struct{
 		testName string
@@ -137,19 +62,23 @@ func TestGetProductCategory(t *testing.T) {
 	}
 
 	// setting handler
+	db, _ := connectDB()
 	r := product.NewRepoProduct(db)
 	s := product.NewService(r)
 	h := handler.NewProductHandler(s)
 
 	for _, testCase := range testCases {
-		reqBody := url.Values{}
-		reqBody.Set("category", testCase.category)
-		g := gin.New()
-		req := httptest.NewRequest(http.MethodGet, "productCategory", strings.NewReader(reqBody.Encode()))
+		reqBody := fmt.Sprintf(`category=%s`, testCase.category)
+		req := httptest.NewRequest(http.MethodGet, "/productCategory", strings.NewReader(reqBody))
 		res := httptest.NewRecorder()
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		g.ServeHTTP(res, req)
-		c, _ := gin.CreateTestContext(res)
+		
+		c, r := gin.CreateTestContext(res)
+		c.Request = req
+		c.Request.Header.Add("Content-Type", binding.MIMEPOSTForm)
+		r.ServeHTTP(res, req)
+
+		h.GetProductByCategory(c)
+		r.GET("/productCategory", h.GetProductByCategory)
 		h.GetProductByCategory(c)
 
 		assert.Equal(t, testCase.expectCode, res.Code)
@@ -159,17 +88,6 @@ func TestGetProductCategory(t *testing.T) {
 }
 
 func TestAddShoppingCart(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	LoadEnv()
-
-	// Create database connection
-	dbname := os.Getenv("DB_name")
-	db, err := connectDB(dbname)
-	if err != nil {
-		log.Printf("Error %s when opening DB", err)
-		return
-	}
-
 	// Testcases list
 	testCases := []struct{
 		testName string
@@ -188,6 +106,7 @@ func TestAddShoppingCart(t *testing.T) {
 	}
 
 	// setting handler
+	db, _ := connectDB()
 	r := product.NewRepoProduct(db)
 	s := product.NewService(r)
 	h := handler.NewProductHandler(s)
@@ -196,12 +115,12 @@ func TestAddShoppingCart(t *testing.T) {
 		currentCustomer := customer.Customer{
 			ID: testCase.customerId,
 		}
-		g := gin.New()
 		req := httptest.NewRequest(http.MethodPost, "/addcart", nil)
 		res := httptest.NewRecorder()
-		g.ServeHTTP(res, req)
-		c, _ := gin.CreateTestContext(res)
+		c, r := gin.CreateTestContext(res)
 		c.Set("currentCustomer", currentCustomer)
+		r.ServeHTTP(res, req)
+		r.POST("/addcart", h.CreateShopCart)
 		h.CreateShopCart(c)
 
 		assert.Equal(t, testCase.expectCode, res.Code)
@@ -211,17 +130,6 @@ func TestAddShoppingCart(t *testing.T) {
 }
 
 func TestInsertProductByCartId(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	LoadEnv()
-	
-	// Create database connection
-	dbname := os.Getenv("DB_name")
-	db, err := connectDB(dbname)
-	if err != nil {
-		log.Printf("Error %s when opening DB", err)
-		return
-	}
-
 	// Testcases list
 	testCases := []struct{
 		testName string
@@ -242,6 +150,7 @@ func TestInsertProductByCartId(t *testing.T) {
 	}
 
 	// setting handler
+	db, _ := connectDB()
 	r := product.NewRepoProduct(db)
 	s := product.NewService(r)
 	h := handler.NewProductHandler(s)
@@ -250,15 +159,15 @@ func TestInsertProductByCartId(t *testing.T) {
 		currentCustomer := customer.Customer{
 			ID: testCase.customerId,
 		}
-		reqBody := url.Values{}
-		reqBody.Set("id", testCase.id)
-		reqBody.Set("product_id", testCase.productId)
-		g := gin.New()
-		req := httptest.NewRequest(http.MethodPost, "/addshopcart", strings.NewReader(reqBody.Encode()))
+		reqBody := fmt.Sprintf(`id=%s&product_id=%s`, testCase.id, testCase.productId)
+		req := httptest.NewRequest(http.MethodPost, "/addshopcart", strings.NewReader(reqBody))
 		res := httptest.NewRecorder()
-		g.ServeHTTP(res, req)
-		c, _ := gin.CreateTestContext(res)
+		c, r := gin.CreateTestContext(res)
+		c.Request = req
+		c.Request.Header.Add("Content-Type", binding.MIMEPOSTForm)
 		c.Set("currentCustomer", currentCustomer)
+		r.ServeHTTP(res, req)
+		r.POST("/addshopcart", h.InsertToShopCart)
 		h.InsertToShopCart(c)
 
 		assert.Equal(t, testCase.expectCode, res.Code)
@@ -268,17 +177,6 @@ func TestInsertProductByCartId(t *testing.T) {
 }
 
 func TestGetListShopCart(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	LoadEnv()
-	
-	// Create database connection
-	dbname := os.Getenv("DB_name")
-	db, err := connectDB(dbname)
-	if err != nil {
-		log.Printf("Error %s when opening DB", err)
-		return
-	}
-
 	// Testcases list
 	testCases := []struct{
 		testName string
@@ -299,6 +197,7 @@ func TestGetListShopCart(t *testing.T) {
 	}
 
 	// setting handler
+	db, _ := connectDB()
 	r := product.NewRepoProduct(db)
 	s := product.NewService(r)
 	h := handler.NewProductHandler(s)
@@ -307,14 +206,15 @@ func TestGetListShopCart(t *testing.T) {
 		currentCustomer := customer.Customer{
 			ID: testCase.customerId,
 		}
-		reqBody := url.Values{}
-		reqBody.Set("id", testCase.id)
-		g := gin.New()
-		req := httptest.NewRequest(http.MethodGet, "listshopcart", strings.NewReader(reqBody.Encode()))
+		reqBody := fmt.Sprintf(`id=%s`, testCase.id)
 		res := httptest.NewRecorder()
-		g.ServeHTTP(res, req)
-		c, _ := gin.CreateTestContext(res)
+		req := httptest.NewRequest(http.MethodGet, "/listshopcart", strings.NewReader(reqBody))
+		c, r := gin.CreateTestContext(res)
+		c.Request = req
+		c.Request.Header.Add("Content-Type", binding.MIMEPOSTForm)
 		c.Set("currentCustomer", currentCustomer)
+		r.ServeHTTP(res, req)
+		r.GET("/listshopcart", h.GetListProductShopCart)
 		h.GetListProductShopCart(c)
 
 		assert.Equal(t, testCase.expectCode, res.Code)

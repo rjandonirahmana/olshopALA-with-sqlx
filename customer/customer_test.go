@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"graphql/auth"
 	"graphql/customer"
 	"graphql/handler"
 	"graphql/product"
@@ -52,13 +53,14 @@ func setupRouter() *gin.Engine {
 		return nil
 	}
 
+	auth := auth.NewService()
 	customerdb := customer.NewRepo(db)
 	productdb := product.NewRepoProduct(db)
 	customerserv := customer.NewCustomerService(customerdb)
 	productServ := product.NewService(productdb)
 
 	productHanlder := handler.NewProductHandler(productServ)
-	customerHandler := handler.NewHandlerCustomer(customerserv, nil)
+	customerHandler := handler.NewHandlerCustomer(customerserv, auth)
 
 	gin.SetMode(gin.TestMode)
 	c := gin.Default()
@@ -207,10 +209,11 @@ func TestUpdatePhoneCustomer(t *testing.T) {
 
 	// r := setupRouter()
 	// setting handler
+	auth := auth.NewService()
 	db, _ := connectDB()
 	r := customer.NewRepo(db)
 	s := customer.NewCustomerService(r)
-	h := handler.NewHandlerCustomer(s, nil)
+	h := handler.NewHandlerCustomer(s, auth)
 
 	for _, testCase := range testCases {
 		currentCustomer := customer.Customer{
@@ -230,7 +233,7 @@ func TestUpdatePhoneCustomer(t *testing.T) {
 		r.PUT("/phone", h.UpdatePhoneCustomer)
 		h.UpdatePhoneCustomer(c)
 		fmt.Println(res.Body.String())
-		
+
 		assert.Equal(t, testCase.expectCode, res.Code)
 		assert.True(t, strings.Contains(res.Body.String(), testCase.email))
 		assert.True(t, strings.Contains(res.Body.String(), testCase.expectMsg))

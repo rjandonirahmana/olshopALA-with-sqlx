@@ -21,10 +21,11 @@ type RepoProduct interface {
 	CreateCart(customerID, id int) error
 	GetShopCartIDCustomer(customerID, shopcartID int) (Cart, error)
 	DeleteProductInShopCart(cart_id, customer_id, product_id int) error
-	DecreaseQuantitInShopCart(cart_id, customer_id, product_id int) error
+	DecreaseQuantitInShopCart(cart_id, product_id int) error
 	IncreaseQuantityInshopCart(cart_id, product_id int) error
 	CheckInshopCart(cartid int, product_name string) (int, error)
 	ShopCartCustomer(customerid int) ([]Cart, error)
+	DeleteAllWhenQuantity0() error
 }
 
 func NewRepoProduct(db *sqlx.DB) *repoProduct {
@@ -157,10 +158,10 @@ func (r *repoProduct) DeleteProductInShopCart(cart_id, customer_id, product_id i
 	return nil
 }
 
-func (r *repoProduct) DecreaseQuantitInShopCart(cart_id, customer_id, product_id int) error {
+func (r *repoProduct) DecreaseQuantitInShopCart(cart_id, product_id int) error {
 	querry := `UPDATE shopcart SET quantity = quantity - 1 WHERE cart_id = ? AND product_id = ?`
 
-	_, err := r.db.Exec(querry, cart_id, customer_id, product_id)
+	_, err := r.db.Exec(querry, cart_id, product_id)
 
 	if err != nil {
 		return err
@@ -189,4 +190,15 @@ func (r *repoProduct) CheckInshopCart(cartid int, product_name string) (int, err
 	}
 
 	return quantity, nil
+}
+
+func (r *repoProduct) DeleteAllWhenQuantity0() error {
+	querry := `DELETE FROM shopcart WHERE quantity = ?`
+
+	_, err := r.db.Exec(querry, 0)
+
+	if err != nil {
+		return err
+	}
+	return nil
 }

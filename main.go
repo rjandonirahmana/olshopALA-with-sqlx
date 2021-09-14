@@ -46,9 +46,11 @@ func main() {
 	api.PUT("password", authMiddleWare(auth, customerserv), customerHandler.UpdatePassword)
 	api.DELETE("/account", authMiddleWare(auth, customerserv), customerHandler.DeleteAccount)
 	api.POST("/addcart", authMiddleWare(auth, customerserv), productHanlder.CreateShopCart)
+
 	api.POST("/insertshopcart", authMiddleWare(auth, customerserv), productHanlder.InsertToShopCart)
 	api.GET("/listshopcart", authMiddleWare(auth, customerserv), productHanlder.GetListProductShopCart)
 	api.GET("/shopcartcustomer", authMiddleWare(auth, customerserv), productHanlder.GetAllCartCustomer)
+	api.PUT("/decreaseproduct", authMiddleWare(auth, customerserv), productHanlder.DecreaseQuantity)
 	api.DELETE("/productshopcart", authMiddleWare(auth, customerserv), productHanlder.DeleteProductShopcart)
 	api.POST("/transaction", authMiddleWare(auth, customerserv), transactionHandler.CreateTransaction)
 

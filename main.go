@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	db, err := sqlx.Connect("mysql", ":@(localhost:3306)/olpALA?parseTime=true")
+	db, err := sqlx.Connect("mysql", "root:12345@(localhost:3306)/olshopALA?parseTime=true")
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -43,6 +43,8 @@ func main() {
 	api.POST("/login", customerHandler.Login)
 	api.PUT("/phone", authMiddleWare(auth, customerserv), customerHandler.UpdatePhoneCustomer)
 	api.PUT("/avatar", authMiddleWare(auth, customerserv), customerHandler.UpdateAvatar)
+	api.PUT("password", authMiddleWare(auth, customerserv), customerHandler.UpdatePassword)
+	api.DELETE("/account", authMiddleWare(auth, customerserv), customerHandler.DeleteAccount)
 	api.POST("/addcart", authMiddleWare(auth, customerserv), productHanlder.CreateShopCart)
 	api.POST("/insertshopcart", authMiddleWare(auth, customerserv), productHanlder.InsertToShopCart)
 	api.GET("/listshopcart", authMiddleWare(auth, customerserv), productHanlder.GetListProductShopCart)

@@ -15,12 +15,13 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/tj/assert"
 )
 
 func connectDB() (*sqlx.DB, error) {
-	db, err := sqlx.Connect("mysql", "root:12345@(localhost:3306)/dbsampingan?parseTime=true")
+	db, err := sqlx.Connect("mysql", "root:12345@(localhost:3306)/olshopALA?parseTime=true")
 	if err != nil {
 		return nil, err
 	}
@@ -45,14 +46,14 @@ func setupRouter() *gin.Engine {
 
 	gin.SetMode(gin.TestMode)
 	c := gin.Default()
-	c.GET("productCategory", productHanlder.GetProductByCategory)
+	c.GET("/productCategory", productHanlder.GetProductByCategory)
 	c.POST("/register", customerHandler.CreateCustomer)
 	c.POST("/login", customerHandler.Login)
 	c.PUT("/phone", customerHandler.UpdatePhoneCustomer)
 	c.PUT("/avatar", customerHandler.UpdateAvatar)
 	c.POST("/addcart", productHanlder.CreateShopCart)
 	c.POST("/addshopcart", productHanlder.InsertToShopCart)
-	c.GET("listshopcart", productHanlder.GetListProductShopCart)
+	c.GET("/listshopcart", productHanlder.GetListProductShopCart)
 
 	return c
 }
@@ -70,7 +71,7 @@ func TestCreateCustomer(t *testing.T) {
 		{
 			testName:        "success",
 			name:            "joni2",
-			email:           "hajinamrun123",
+			email:           "altera123",
 			password:        "jiji",
 			confirmPassword: "jiji",
 			expectCode:      http.StatusOK,
@@ -79,7 +80,7 @@ func TestCreateCustomer(t *testing.T) {
 		{
 			testName:        "fail used email",
 			name:            "joni3",
-			email:           "ateng",
+			email:           "alterra",
 			password:        "jojo",
 			confirmPassword: "jojo",
 			expectCode:      http.StatusBadRequest,
@@ -114,3 +115,45 @@ func TestCreateCustomer(t *testing.T) {
 		assert.True(t, strings.Contains(res.Body.String(), testCase.expectMsg))
 	}
 }
+
+// func TestUpdateAvatar(t *testing.T) {
+// 	testCase := []struct {
+// 		Testname     string
+// 		Token        string
+// 		Avatar       string
+// 		ExpectedCode int
+// 		ExpMsg       string
+// 	}{
+// 		{
+// 			Testname:     "Failed",
+// 			Token:        "6362737537357163t`3t",
+// 			Avatar:       "162255.png",
+// 			ExpectedCode: 422,
+// 			ExpMsg:       "failed update",
+// 		},
+// 		{
+// 			Testname:     "success",
+// 			Token:        "66",
+// 			Avatar:       "tgwg.jpg",
+// 			ExpectedCode: 200,
+// 			ExpMsg:       "succeess",
+// 		},
+// 	}
+
+// 	r := setupRouter()
+
+// 	for _, testCase := range testCase {
+// 		reqBody, _ := json.Marshal(map[string]string{
+// 			"Token":  testCase.Token,
+// 			"Avatar": testCase.Avatar,
+// 		})
+// 		req := httptest.NewRequest(http.MethodPut, "/avatar", bytes.NewBuffer(reqBody))
+// 		res := httptest.NewRecorder()
+// 		r.ServeHTTP(res, req)
+// 		fmt.Println(testCase.Testname, res.Body.String())
+// 		assert.Equal(t, testCase.ExpectedCode, res.Code)
+// 		// assert.True(t, strings.Contains(res.Body.String(), testCase.name))
+// 		assert.True(t, strings.Contains(res.Body.String(), testCase.ExpMsg))
+// 	}
+
+// }

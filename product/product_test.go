@@ -4,9 +4,9 @@ package product_test
 
 import (
 	"fmt"
-	"graphql/customer"
-	"graphql/handler"
-	"graphql/product"
+	"olshop/customer"
+	"olshop/handler"
+	"olshop/product"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -219,6 +219,50 @@ func TestGetListShopCart(t *testing.T) {
 
 		assert.Equal(t, testCase.expectCode, res.Code)
 		assert.True(t, strings.Contains(res.Body.String(), testCase.productId))
+		assert.True(t, strings.Contains(res.Body.String(), testCase.expectMsg))
+	}
+}
+
+func TestGetAllCart(t *testing.T) {
+	// Testcases list
+	testCases := []struct{
+		testName string
+		customerId int
+		lenCart string
+		expectCode int
+		expectMsg string
+	}{
+		{
+			testName: "success",
+			customerId: 1,
+			lenCart: "1",
+			expectCode: http.StatusOK,
+			expectMsg: "have",
+		},
+	}
+
+	// setting handler
+	db, _ := connectDB()
+	r := product.NewRepoProduct(db)
+	s := product.NewService(r)
+	h := handler.NewProductHandler(s)
+
+	for _, testCase := range testCases {
+		currentCustomer := customer.Customer{
+			ID: testCase.customerId,
+		}
+		res := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/shopcartcustomer", nil)
+		c, r := gin.CreateTestContext(res)
+		c.Request = req
+		c.Request.Header.Add("Content-Type", binding.MIMEPOSTForm)
+		c.Set("currentCustomer", currentCustomer)
+		r.ServeHTTP(res, req)
+		r.GET("/shopcartcustomer", h.GetAllCartCustomer)
+		h.GetAllCartCustomer(c)
+
+		assert.Equal(t, testCase.expectCode, res.Code)
+		assert.True(t, strings.Contains(res.Body.String(), testCase.lenCart))
 		assert.True(t, strings.Contains(res.Body.String(), testCase.expectMsg))
 	}
 }

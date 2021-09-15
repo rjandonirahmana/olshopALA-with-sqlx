@@ -56,7 +56,7 @@ func (s *ServiceCustomer) Register(customer Customer) (Customer, error) {
 	if err != nil {
 		return Customer{}, err
 	}
-
+	
 	customer, err = s.repo.GetCustomerByEmail(customer.Email)
 	if err != nil {
 		return Customer{}, err

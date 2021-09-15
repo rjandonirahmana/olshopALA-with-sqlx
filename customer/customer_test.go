@@ -69,23 +69,22 @@ func setupRouter() *gin.Engine {
 
 	gin.SetMode(gin.TestMode)
 	c := gin.Default()
-	api := c.Group("/api/v1")
 
-	api.GET("/productcategory", productHanlder.GetProductByCategory)
-	api.POST("/register", customerHandler.CreateCustomer)
-	api.POST("/login", customerHandler.Login)
-	api.PUT("/phone", customerHandler.UpdatePhoneCustomer)
-	api.PUT("/avatar", customerHandler.UpdateAvatar)
-	api.PUT("password", customerHandler.UpdatePassword)
-	api.DELETE("/account", customerHandler.DeleteAccount)
-	api.POST("/addcart", productHanlder.CreateShopCart)
+	c.GET("/productcategory", productHanlder.GetProductByCategory)
+	c.POST("/register", customerHandler.CreateCustomer)
+	c.POST("/login", customerHandler.Login)
+	c.PUT("/phone", customerHandler.UpdatePhoneCustomer)
+	c.PUT("/avatar", customerHandler.UpdateAvatar)
+	c.PUT("password", customerHandler.UpdatePassword)
+	c.DELETE("/account", customerHandler.DeleteAccount)
+	c.POST("/addcart", productHanlder.CreateShopCart)
 
-	api.POST("/insertshopcart", productHanlder.InsertToShopCart)
-	api.GET("/listshopcart", productHanlder.GetListProductShopCart)
-	api.GET("/shopcartcustomer", productHanlder.GetAllCartCustomer)
-	api.PUT("/decreaseproduct", productHanlder.DecreaseQuantity)
-	api.DELETE("/productshopcart", productHanlder.DeleteProductShopcart)
-	api.POST("/transaction", transactionHandler.CreateTransaction)
+	c.POST("/insertshopcart", productHanlder.InsertToShopCart)
+	c.GET("/listshopcart", productHanlder.GetListProductShopCart)
+	c.GET("/shopcartcustomer", productHanlder.GetAllCartCustomer)
+	c.PUT("/decreaseproduct", productHanlder.DecreaseQuantity)
+	c.DELETE("/productshopcart", productHanlder.DeleteProductShopcart)
+	c.POST("/transaction", transactionHandler.CreateTransaction)
 
 	return c
 }

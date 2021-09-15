@@ -1,7 +1,9 @@
 package transaction
 
 import (
-	"graphql/product"
+	"fmt"
+	"olshop/customer"
+	"olshop/product"
 	"time"
 )
 
@@ -11,34 +13,65 @@ type ServiceTrans struct {
 }
 
 type ServiceTransInt interface {
-	CreateTransaction(idProduct int, customerID, quantity int) (Transactions, error)
+	CreateTransaction(customer customer.Customer, cartID int) (Transactions, error)
 }
 
-func (s *ServiceTrans) CreateTransaction(idProduct, customerID, quantity int) (Transactions, error) {
-	idTrans, _ := s.repo.GetLastTransaction()
+func NewTransactionService(repo RepoTransaction, repoProduct product.RepoProduct) *ServiceTrans {
+	return &ServiceTrans{repo: repo, repoProduct: repoProduct}
+}
 
-	product, err := s.repoProduct.GetProductByID(idProduct)
+func (s *ServiceTrans) CreateTransaction(customer customer.Customer, cartID int) (Transactions, error) {
+
+	_, err := s.repoProduct.GetShopCartIDCustomer(customer.ID, cartID)
 	if err != nil {
+		fmt.Println("error1")
 		return Transactions{}, err
 	}
-	t := Transactions{}
-	t.ID = idTrans + 1
-	t.ID_product = product.ID
-	t.Price = product.Price
-	t.CreatedAt = time.Now()
-	t.CustomerID = customerID
-	t.Quantity = quantity
+
+	products, err := s.repoProduct.GetListCartByID(cartID)
+	if err != nil {
+		fmt.Println("error2")
+		return Transactions{}, err
+	}
+
+	checkid, _ := s.repo.CheckTransaction(cartID)
+
+	if checkid > 0 {
+		transaction, err := s.repo.GetDetailTransaction(checkid)
+		if err != nil {
+			fmt.Println("error4")
+			return Transactions{}, err
+		}
+		return transaction, nil
+	}
+
+	totalPrice := int32(0)
+	for _, v := range products {
+		totalPrice += v.Price * int32(v.Quantity)
+	}
+
+	t := Transactions{
+		ID:         checkid,
+		CustomerID: customer.ID,
+		Price:      totalPrice,
+		CreatedAt:  time.Now(),
+		MaxTime:    time.Now().Add(time.Hour * 5),
+		ShopCartID: cartID,
+		PaymentID:  1,
+	}
 
 	err = s.repo.InserTransaction(t)
 	if err != nil {
+		fmt.Println("error5")
 		return Transactions{}, err
 	}
 
-	trans, err := s.repo.GetDetailTransaction(t.ID)
+	createdTransaction, err := s.repo.GetDetailTransaction(checkid)
 	if err != nil {
+		fmt.Println("error6")
 		return Transactions{}, err
 	}
 
-	return trans, nil
+	return createdTransaction, nil
 
 }

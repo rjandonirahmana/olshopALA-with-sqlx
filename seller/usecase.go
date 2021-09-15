@@ -24,9 +24,6 @@ func (s *Service) Register(seller Seller) (Seller, error) {
 
 	seller.Password = string(hashpassword)
 
-	id, _ := s.service.GetLastID()
-	seller.ID = id + 1
-
 	seller, err = s.service.CreateSeller(seller)
 	if err != nil {
 		return Seller{}, err

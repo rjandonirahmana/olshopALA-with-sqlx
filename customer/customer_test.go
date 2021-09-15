@@ -161,7 +161,7 @@ func TestLogin(t *testing.T) {
 			email:      "jon@k.k",
 			password:   "jiji",
 			expectCode: http.StatusOK,
-			expectMsg:  "success login",
+			expectMsg:  "success",
 		},
 		{
 			testName:   "fail email not found",
@@ -210,7 +210,7 @@ func TestUpdatePhoneCustomer(t *testing.T) {
 			email:      "jon@k.k",
 			phone:      `0812345`,
 			expectCode: http.StatusOK,
-			expectMsg:  "successfully udpate",
+			expectMsg:  "success",
 		},
 		{
 			testName:   "fail email not found",
@@ -252,4 +252,119 @@ func TestUpdatePhoneCustomer(t *testing.T) {
 		assert.True(t, strings.Contains(res.Body.String(), testCase.expectMsg))
 	}
 
+}
+
+func TestUpdatePassword(t *testing.T) {
+	// Testcases list
+	testCases := []struct {
+		testName   string
+		id      int
+		oldPassword      string
+		newPassword string
+		expectCode int
+		expectMsg  string
+	}{
+		{
+			testName:   "success",
+			id:      1,
+			oldPassword: "jojo",
+			newPassword: "jiji",
+			expectCode: http.StatusOK,
+			expectMsg:  "success",
+		},
+		{
+			testName:   "fail email not found",
+			id:      2,
+			oldPassword: "aaaa",
+			newPassword: "uuu",
+			expectCode: http.StatusUnprocessableEntity,
+			expectMsg:  "please",
+		},
+	}
+
+	// setting handler
+	auth := auth.NewService()
+	db, _ := connectDB()
+	r := customer.NewRepo(db)
+	s := customer.NewCustomerService(r)
+	h := handler.NewHandlerCustomer(s, auth)
+
+	for _, testCase := range testCases {
+		currentCustomer := customer.Customer{
+			ID: testCase.id,
+		}
+		
+		reqBody := fmt.Sprintf(`password=%s&newpassword=%s`, testCase.oldPassword, testCase.newPassword)
+		res := httptest.NewRecorder()
+		
+		req := httptest.NewRequest(http.MethodPut, "/password", strings.NewReader(reqBody))
+		
+		c, r := gin.CreateTestContext(res)
+		c.Request = req
+		c.Request.Header.Add("Content-Type", binding.MIMEPOSTForm)
+		c.Set("currentCustomer", currentCustomer)
+		r.ServeHTTP(res, req)
+		r.PUT("/password", h.UpdatePassword)
+		h.UpdatePassword(c)
+		fmt.Println(res.Body.String())
+
+		assert.Equal(t, testCase.expectCode, res.Code)
+		assert.True(t, strings.Contains(res.Body.String(), testCase.expectMsg))
+	}
+}
+
+func TestDeleteAccount(t *testing.T) {
+	// Testcases list
+	testCases := []struct {
+		testName   string
+		id      int
+		password      string
+		expectCode int
+		expectMsg  string
+	}{
+		{
+			testName:   "success",
+			id:      1,
+			password:      "jojo",
+			expectCode: http.StatusOK,
+			expectMsg:  "success",
+		},
+		{
+			testName:   "fail email not found",
+			id:      2,
+			password:      "aaa",
+			expectCode: http.StatusUnprocessableEntity,
+			expectMsg:  "cant delete",
+		},
+	}
+
+	// setting handler
+	auth := auth.NewService()
+	db, _ := connectDB()
+	r := customer.NewRepo(db)
+	s := customer.NewCustomerService(r)
+	h := handler.NewHandlerCustomer(s, auth)
+
+	for _, testCase := range testCases {
+		currentCustomer := customer.Customer{
+			ID: testCase.id,
+		}
+		
+		reqBody := fmt.Sprintf(`password=%s`, testCase.password)
+		res := httptest.NewRecorder()
+		
+		req := httptest.NewRequest(http.MethodDelete, "/account", strings.NewReader(reqBody))
+		
+		c, r := gin.CreateTestContext(res)
+		c.Request = req
+		c.Request.Header.Add("Content-Type", binding.MIMEPOSTForm)
+		c.Set("currentCustomer", currentCustomer)
+		r.ServeHTTP(res, req)
+		r.DELETE("/account", h.DeleteAccount)
+		h.DeleteAccount(c)
+		fmt.Println(res.Body.String())
+
+		assert.Equal(t, testCase.expectCode, res.Code)
+		assert.True(t, strings.Contains(res.Body.String(), testCase.expectMsg))
+	}
 }

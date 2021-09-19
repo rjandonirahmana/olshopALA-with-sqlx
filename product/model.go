@@ -2,11 +2,13 @@ package product
 
 type Product struct {
 	Name          string       `db:"name" json:"name"`
-	ID            int          `db:"id" json:"id"`
+	ID            int64        `db:"id" json:"id"`
 	Price         int32        `db:"price" json:"price"`
 	Category_id   int          `db:"category_id" json:"category_id"`
 	Description   *string      `db:"description" json:"description"`
 	ProductImages ProductImage `db:"product_images" json:"product_images,omitempty"`
+	Quantity      int          `db:"quantity" json:"quantity"`
+	SellerID      int          `db:"seller_id" json:"seller_id"`
 }
 
 type ProductImage struct {

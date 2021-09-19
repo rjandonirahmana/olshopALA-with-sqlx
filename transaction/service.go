@@ -24,25 +24,31 @@ func (s *ServiceTrans) CreateTransaction(customer customer.Customer, cartID int)
 
 	_, err := s.repoProduct.GetShopCartIDCustomer(customer.ID, cartID)
 	if err != nil {
-		fmt.Println("error1")
 		return Transactions{}, err
 	}
 
 	products, err := s.repoProduct.GetListCartByID(cartID)
 	if err != nil {
-		fmt.Println("error2")
 		return Transactions{}, err
 	}
 
-	checkid, _ := s.repo.CheckTransaction(cartID)
+	id, err := s.repo.CheckTransaction(cartID)
+	if err != nil {
+		return Transactions{}, err
+	}
 
-	if checkid > 0 {
-		transaction, err := s.repo.GetDetailTransaction(checkid)
+	if id > 0 {
+		transaction, err := s.repo.GetDetailTransaction(id)
 		if err != nil {
 			fmt.Println("error4")
 			return Transactions{}, err
 		}
 		return transaction, nil
+	}
+
+	id, err = s.repo.GetLastIdTransaction()
+	if err != nil {
+		return Transactions{}, err
 	}
 
 	totalPrice := int32(0)
@@ -51,7 +57,7 @@ func (s *ServiceTrans) CreateTransaction(customer customer.Customer, cartID int)
 	}
 
 	t := Transactions{
-		ID:         0,
+		ID:         id + 1,
 		CustomerID: customer.ID,
 		Price:      totalPrice,
 		CreatedAt:  time.Now(),
@@ -66,7 +72,7 @@ func (s *ServiceTrans) CreateTransaction(customer customer.Customer, cartID int)
 		return Transactions{}, err
 	}
 
-	createdTransaction, err := s.repo.GetDetailTransaction(checkid)
+	createdTransaction, err := s.repo.GetDetailTransaction(id + 1)
 	if err != nil {
 		fmt.Println("error6")
 		return Transactions{}, err

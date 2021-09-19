@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -15,6 +16,7 @@ type RepoTransaction interface {
 	GetDetailTransaction(id int) (Transactions, error)
 	InserTransaction(t Transactions) error
 	CheckTransaction(cartid int) (int, error)
+	GetLastIdTransaction() (int, error)
 }
 
 func NewTransactionRepo(db *sqlx.DB) *repoTransaction {
@@ -23,14 +25,14 @@ func NewTransactionRepo(db *sqlx.DB) *repoTransaction {
 
 func (r *repoTransaction) GetDetailTransaction(id int) (Transactions, error) {
 	querry := `SELECT * FROM transactions WHERE id = ?`
-	var transaction Transactions
-	err := r.db.Get(&transaction, querry, id)
+	var trans Transactions
+	err := r.db.Get(&trans, querry, id)
 
-	if err != nil {
+	if err != sql.ErrNoRows {
 		return Transactions{}, err
 	}
 
-	return transaction, nil
+	return trans, nil
 }
 
 func (r *repoTransaction) InserTransaction(t Transactions) error {
@@ -49,16 +51,25 @@ func (r *repoTransaction) InserTransaction(t Transactions) error {
 }
 
 func (r *repoTransaction) CheckTransaction(cartid int) (int, error) {
-	querry := `SELECT id FROM transactions WHERE shopcart_id = ? AND max_time > ?`
+	querry := `SELECT id FROM transactions WHERE shopcart_id = ? AND max_time > ? `
+
+	//select id transacttion biar di passs ke detail transaction kalo ada
 
 	var value int
-	//select id transacttion biar di passs ke detail transaction kalo ada
-	err := r.db.Get(&value, querry, cartid, time.Now())
 
-	if err == nil && value == 0 {
-		return 0, nil
+	err := r.db.Get(&value, querry, cartid, time.Now())
+	if err != sql.ErrNoRows {
+		return 0, err
 	}
-	if err != nil {
+	return value, nil
+}
+
+func (r *repoTransaction) GetLastIdTransaction() (int, error) {
+	querry := `SELECT id FROM transactions WHERE id = (SELECT MAX(id) FROM transactions)`
+
+	var value int
+	err := r.db.Get(&value, querry)
+	if err != sql.ErrNoRows {
 		return 0, err
 	}
 	return value, nil

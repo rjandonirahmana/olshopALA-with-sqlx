@@ -18,6 +18,7 @@ type Repository interface {
 	ChangePassword(newPassword string, id int) error
 	GetCustomerByEmail(email string) (Customer, error)
 	ChangeAvatar(avatarFile string, id int) error
+	DeleteCustomer(id int) error
 }
 
 func NewRepo(db *sqlx.DB) *repository {
@@ -108,4 +109,15 @@ func (r *repository) GetCustomerByEmail(email string) (Customer, error) {
 	}
 
 	return customer, nil
+}
+
+func (r *repository) DeleteCustomer(id int) error {
+	querry := `DELETE FROM customers WHERE id = ?`
+
+	_, err := r.db.Exec(querry, id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

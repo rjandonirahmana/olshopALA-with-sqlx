@@ -24,7 +24,9 @@ type CustomerInt interface {
 	UpdateCustomerPhone(phone string, email string) error
 	GetCustomerByID(id int) (Customer, error)
 	IsEmailAvailable(email string) (bool, error)
-	ChangeProfile(profile []byte, name string, id int) error
+	ChangeProfile(profile []byte, name string, id int) (Customer, error)
+	ChangePassword(oldpassword, newPassword string, id int) (Customer, error)
+	DeleteCustomer(id int, password string) error
 }
 
 func NewCustomerService(repo Repository) *ServiceCustomer {
@@ -116,20 +118,24 @@ func (s *ServiceCustomer) IsEmailAvailable(email string) (bool, error) {
 	return true, nil
 }
 
-func (s *ServiceCustomer) ChangeProfile(profile []byte, name string, id int) error {
+func (s *ServiceCustomer) ChangeProfile(profile []byte, name string, id int) (Customer, error) {
 
 	mime := mimetype.Detect(profile)
 	if strings.Index(AllowedExtensions, mime.Extension()) == -1 {
-		return errors.New("File Type is not allowed, file type: " + mime.Extension())
+		return Customer{}, errors.New("File Type is not allowed, file type: " + mime.Extension())
 	}
 
 	profilesave := fmt.Sprintf("image/profile/%s,%s", name, mime.Extension())
 	err := s.repo.ChangeAvatar(profilesave, id)
 	if err != nil {
-		return err
+		return Customer{}, err
+	}
+	customer, err := s.repo.GetCustomerByID(id)
+	if err != nil {
+		return Customer{}, err
 	}
 
-	return nil
+	return customer, nil
 }
 
 func RandStringBytes(n int) string {
@@ -138,4 +144,56 @@ func RandStringBytes(n int) string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+func (s *ServiceCustomer) ChangePassword(oldpassword, newPassword string, id int) (Customer, error) {
+	customer, err := s.repo.GetCustomerByID(id)
+	if err != nil {
+		return Customer{}, err
+	}
+	oldpassword += customer.Salt
+
+	err1 := bcrypt.CompareHashAndPassword([]byte(customer.Password), []byte(oldpassword))
+	if err1 != nil {
+		return Customer{}, errors.New("please input your password correctly")
+	}
+	newPassword += customer.Salt
+
+	hashpassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.MinCost)
+	if err != nil {
+		return Customer{}, err
+	}
+
+	err = s.repo.ChangePassword(string(hashpassword), id)
+	if err != nil {
+		return Customer{}, err
+	}
+
+	customer, err = s.repo.GetCustomerByID(id)
+	if err != nil {
+		return Customer{}, err
+	}
+
+	return customer, nil
+
+}
+
+func (s *ServiceCustomer) DeleteCustomer(id int, password string) error {
+	customer, err := s.repo.GetCustomerByID(id)
+	if err != nil {
+		return err
+	}
+
+	password += customer.Salt
+	err1 := bcrypt.CompareHashAndPassword([]byte(customer.Password), []byte(password))
+	if err1 != nil {
+		return errors.New("cant delete your account if you dont know your password")
+	}
+
+	err = s.repo.DeleteCustomer(id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

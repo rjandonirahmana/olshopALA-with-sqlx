@@ -148,3 +148,32 @@ func (h *HandlerProduct) GetAllCartCustomer(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 
 }
+
+func (h *HandlerProduct) DecreaseQuantity(c *gin.Context) {
+	cartid, err := strconv.Atoi((c.Request.FormValue("cart_id")))
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	productID, err := strconv.Atoi((c.Request.FormValue("product_id")))
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusInternalServerError, "failed", nil)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	customer := c.MustGet("currentCustomer").(customer.Customer)
+
+	productLeft, err := h.service.DecreaseProductShopCart(customer.ID, productID, cartid)
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusConflict, "failed", err)
+		c.JSON(http.StatusInternalServerError, response)
+		return
+	}
+
+	response := APIResponse("success", http.StatusOK, fmt.Sprintf("products left in shop cart with id customer : %d and cart_id : %d", customer.ID, cartid), productLeft)
+	c.JSON(http.StatusOK, response)
+
+}

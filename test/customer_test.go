@@ -14,6 +14,8 @@ import (
 	"strings"
 	"testing"
 
+	_ "github.com/go-sql-driver/mysql"
+
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	"github.com/tj/assert"
@@ -70,9 +72,9 @@ func TestCreateCustomer(t *testing.T) {
 		{
 			testName:        "success",
 			name:            "joni2",
-			email:           "hajinamrun123",
-			password:        "jiji",
-			confirmPassword: "jiji",
+			email:           "SI KOCAK",
+			password:        "jiji1",
+			confirmPassword: "jiji1",
 			expectCode:      http.StatusOK,
 			expectMsg:       "account successfully created",
 		},
@@ -80,8 +82,8 @@ func TestCreateCustomer(t *testing.T) {
 			testName:        "fail used email",
 			name:            "joni3",
 			email:           "ateng",
-			password:        "jojo",
-			confirmPassword: "jojo",
+			password:        "jojo1",
+			confirmPassword: "jojo1",
 			expectCode:      http.StatusBadRequest,
 			expectMsg:       "email has been used",
 		},

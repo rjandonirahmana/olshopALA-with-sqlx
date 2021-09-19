@@ -29,8 +29,8 @@ func (h *handlerCustomer) CreateCustomer(c *gin.Context) {
 		c.JSON(http.StatusUnprocessableEntity, response)
 		return
 	}
-	if len(customers.Email) < 5 {
-		response := APIResponse("your email's too short ", http.StatusForbidden, "failed", nil)
+	if len(customers.Email) < 5 || len(customers.Password) < 5 {
+		response := APIResponse("your email or password's too short ", http.StatusForbidden, "failed", nil)
 		c.JSON(http.StatusUnprocessableEntity, response)
 		return
 	}
@@ -43,7 +43,7 @@ func (h *handlerCustomer) CreateCustomer(c *gin.Context) {
 	customer, err := h.usecase.Register(customerSave)
 
 	if err != nil {
-		respones := APIResponse("failed to create account", http.StatusOK, fmt.Sprintf("%v", err.Error()), nil)
+		respones := APIResponse("failed to create account", http.StatusBadRequest, fmt.Sprintf("%v", err.Error()), nil)
 		c.JSON(http.StatusBadRequest, respones)
 		return
 	}
@@ -128,7 +128,7 @@ func (h *handlerCustomer) UpdateAvatar(c *gin.Context) {
 		return
 	}
 
-	err = h.usecase.ChangeProfile(file, currentCustomer.Email, currentCustomer.ID)
+	currentCustomer, err = h.usecase.ChangeProfile(file, currentCustomer.Email, currentCustomer.ID)
 	if err != nil {
 		response := APIResponse(err.Error(), http.StatusInternalServerError, "failed", nil)
 		c.JSON(http.StatusUnprocessableEntity, response)
@@ -147,4 +147,41 @@ func (h *handlerCustomer) UpdateAvatar(c *gin.Context) {
 	response := APIResponse("avatar", 200, fmt.Sprintf("%s's avatar has successfuly been updated", currentCustomer.Email), currentCustomer)
 
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *handlerCustomer) UpdatePassword(c *gin.Context) {
+	password := c.Request.FormValue("password")
+	newPassword := c.Request.FormValue("newpassword")
+
+	customer := c.MustGet("currentCustomer").(customer.Customer)
+
+	customer, err := h.usecase.ChangePassword(password, newPassword, customer.ID)
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusForbidden, "failed", nil)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+	response := APIResponse("success", 200, fmt.Sprintf("%s's password has successfuly been updated", customer.Email), customer)
+
+	c.JSON(http.StatusOK, response)
+
+}
+
+func (h *handlerCustomer) DeleteAccount(c *gin.Context) {
+	password := c.Request.FormValue("password")
+
+	customer := c.MustGet("currentCustomer").(customer.Customer)
+
+	err := h.usecase.DeleteCustomer(customer.ID, password)
+
+	if err != nil {
+		response := APIResponse(err.Error(), http.StatusForbidden, "failed", nil)
+		c.JSON(http.StatusUnprocessableEntity, response)
+		return
+	}
+
+	response := APIResponse("success", 200, fmt.Sprintf("%s's account has been deleted", customer.Email), nil)
+
+	c.JSON(http.StatusOK, response)
+
 }

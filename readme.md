@@ -11,6 +11,6 @@ this project created by Using :
 
 Next task list
 
--[] fix bug on transaction 
--[] create endpoint to give comment/rate to seller
--[] show rate product to all users
+- [] fix bug on transaction 
+- [] create endpoint to give comment/rate to seller
+- [] show rate product to all users

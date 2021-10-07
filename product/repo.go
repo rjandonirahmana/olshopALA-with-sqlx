@@ -60,7 +60,7 @@ func (r *repoProduct) GetProductByID(id int) (Product, error) {
 }
 
 func (r *repoProduct) GetProductByCategoryName(name_category string) ([]Product, error) {
-	querry := `SELECT DISTINCT p.*, pi.name as "product_images.name", pi.is_primary as "product_images.is_primary", pi.product_id as "product_images.product_id" FROM products p LEFT JOIN product_category pc ON p.category_id = pc.id LEFT JOIN product_images pi ON p.id = pi.product_id WHERE pc.name = ? GROUP BY p.id`
+	querry := `SELECT DISTINCT p.*, pi.name as "product_images.name", pi.is_primary as "product_images.is_primary", pi.product_id as "product_images.product_id", pc.id as "product_category.id", pc.name as "product_category.name" FROM products p LEFT JOIN product_category pc ON p.category_id = pc.id LEFT JOIN product_images pi ON p.id = pi.product_id WHERE pc.name = ? GROUP BY p.id`
 
 	products := []Product{}
 

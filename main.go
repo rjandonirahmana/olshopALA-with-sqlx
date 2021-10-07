@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	db, err := sqlx.Connect("mysql", "root:12345@(localhost:3306)/olshopALA?parseTime=true")
+	db, err := sqlx.Connect("mysql", ":@(localhost:3306)/?parseTime=true")
 	if err != nil {
 		log.Fatalln(err)
 	}

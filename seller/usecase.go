@@ -1,18 +1,38 @@
 package seller
 
 import (
+	"math/rand"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
-type Service struct {
-	service RepoInt
+type service struct {
+	repo RepoInt
 }
 
-func (s *Service) Register(seller Seller) (Seller, error) {
+type Service interface {
+	Register(seller Seller) (Seller, error)
+	GetSellerByID(id int) (Seller, error)
+}
 
-	seller.Salt = "salt"
+func NewService(repo RepoInt) *service {
+	return &service{repo: repo}
+}
+
+const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789"
+
+func RandStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
+func (s *service) Register(seller Seller) (Seller, error) {
+
+	seller.Salt = RandStringBytes(len(seller.Password))
 	seller.Password += seller.Salt
 	seller.CreatedAt = time.Now()
 	seller.UpdatedAt = time.Now()
@@ -24,7 +44,7 @@ func (s *Service) Register(seller Seller) (Seller, error) {
 
 	seller.Password = string(hashpassword)
 
-	seller, err = s.service.CreateSeller(seller)
+	seller, err = s.repo.CreateSeller(seller)
 	if err != nil {
 		return Seller{}, err
 	}
@@ -32,4 +52,11 @@ func (s *Service) Register(seller Seller) (Seller, error) {
 	return seller, nil
 }
 
-func (s *Service) LoginSeller()
+func (s *service) GetSellerByID(id int) (Seller, error) {
+	seller, err := s.repo.GetSellerByID(id)
+	if err != nil {
+		return seller, err
+	}
+
+	return seller, nil
+}

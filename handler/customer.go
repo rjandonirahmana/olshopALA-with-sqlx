@@ -9,6 +9,7 @@ import (
 	"olshop/customer"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 )
 
 type handlerCustomer struct {
@@ -23,15 +24,19 @@ func NewHandlerCustomer(use customer.CustomerInt, auth auth.Service) *handlerCus
 func (h *handlerCustomer) CreateCustomer(c *gin.Context) {
 	var customers customer.InputCustomer
 
-	c.ShouldBindJSON(&customers)
-	if customers.Password != customers.ConfirmPassword {
-		response := APIResponse("password and confirm password is different", http.StatusForbidden, "failed", nil)
+	err := c.ShouldBindJSON(&customers)
+
+	if err != nil {
+		response := APIResponse("failed", http.StatusUnprocessableEntity, "make sure to input whole field correctly", nil)
 		c.JSON(http.StatusUnprocessableEntity, response)
 		return
 	}
-	if len(customers.Email) < 5 {
-		response := APIResponse("your email's too short ", http.StatusForbidden, "failed", nil)
-		c.JSON(http.StatusUnprocessableEntity, response)
+
+	validate := validator.New()
+	err = validate.Struct(&customers)
+	if err != nil {
+		response := APIResponse("failed", http.StatusForbidden, "make sure to input whole field correctly", nil)
+		c.JSON(http.StatusForbidden, response)
 		return
 	}
 
@@ -43,19 +48,19 @@ func (h *handlerCustomer) CreateCustomer(c *gin.Context) {
 	customer, err := h.usecase.Register(customerSave)
 
 	if err != nil {
-		respones := APIResponse("failed to create account", http.StatusBadRequest, fmt.Sprintf("%v", err.Error()), nil)
-		c.JSON(http.StatusBadRequest, respones)
+		respones := APIResponse("failed", http.StatusForbidden, fmt.Sprintf("%v", err.Error()), nil)
+		c.JSON(http.StatusForbidden, respones)
 		return
 	}
 
 	token, err := h.auth.GenerateToken(customer.ID)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, errors.New("failed to generate token"))
+		c.JSON(http.StatusInternalServerError, errors.New("failed to generate token"))
 		return
 
 	}
 
-	response := ResponseAPIToken("account successfully created", http.StatusOK, fmt.Sprintf("new customer suceessfully created with id %d", customer.ID), customer, token)
+	response := ResponseAPIToken("success", http.StatusOK, fmt.Sprintf("new customer successfully created with id %d", customer.ID), customer, token)
 	c.JSON(http.StatusOK, response)
 
 }
@@ -63,19 +68,24 @@ func (h *handlerCustomer) CreateCustomer(c *gin.Context) {
 func (h *handlerCustomer) Login(c *gin.Context) {
 	var input customer.InputLogin
 
-	c.ShouldBindJSON(&input)
+	err := c.ShouldBindJSON(&input)
+	if err != nil {
+		response := APIResponse("failed", http.StatusForbidden, err.Error(), err)
+		c.JSON(http.StatusForbidden, response)
+		return
+	}
 
 	customer, err := h.usecase.LoginCustomer(input)
 	if err != nil {
-		response := APIResponse(err.Error(), http.StatusForbidden, "failed", err)
-		c.JSON(http.StatusUnprocessableEntity, response)
+		response := APIResponse("failed", http.StatusForbidden, err.Error(), err)
+		c.JSON(http.StatusForbidden, response)
 		return
 	}
 
 	token, err := h.auth.GenerateToken(customer.ID)
 	if err != nil {
-		response := APIResponse(err.Error(), http.StatusForbidden, "failed", err)
-		c.JSON(http.StatusUnprocessableEntity, response)
+		response := APIResponse(err.Error(), http.StatusInternalServerError, "failed", err)
+		c.JSON(http.StatusInternalServerError, response)
 		return
 	}
 
@@ -89,9 +99,8 @@ func (h *handlerCustomer) UpdatePhoneCustomer(c *gin.Context) {
 	phone := c.Request.FormValue("phone")
 
 	currentCustomer := c.MustGet("currentCustomer").(customer.Customer)
-	customerEmail := currentCustomer.Email
 
-	err := h.usecase.UpdateCustomerPhone(phone, customerEmail)
+	err := h.usecase.UpdateCustomerPhone(phone, currentCustomer.ID)
 	if err != nil {
 		response := APIResponse(err.Error(), http.StatusForbidden, "failed", nil)
 		c.JSON(http.StatusUnprocessableEntity, response)

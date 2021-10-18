@@ -55,8 +55,8 @@ func TestMiddleware(t *testing.T) {
 			testName: "fail",
 			authType: "Bearer",
 			currentCustomer: customer{
-				id: "2",
-				email: "jiji",
+				id:       "2",
+				email:    "jiji",
 				password: "jin",
 			},
 		},
@@ -64,13 +64,13 @@ func TestMiddleware(t *testing.T) {
 
 	for _, testCase := range testCases {
 		id, _ := strconv.Atoi(testCase.currentCustomer.id)
-		token, err := auth.NewService().GenerateToken(id)
+		token, err := auth.NewService("coba", "cobalagi").GenerateToken(id)
 		assert.Nil(t, err)
 
 		reqBody, _ := json.Marshal(map[string]string{
-			"id" : testCase.currentCustomer.id,
-			"email" : testCase.currentCustomer.email,
-			"password" : testCase.currentCustomer.password,
+			"id":       testCase.currentCustomer.id,
+			"email":    testCase.currentCustomer.email,
+			"password": testCase.currentCustomer.password,
 		})
 		req := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer(reqBody))
 		res := httptest.NewRecorder()
@@ -85,7 +85,7 @@ func TestMiddleware(t *testing.T) {
 
 		tokenSplit := strings.Split(header, " ")[1]
 
-		tokenString, err := auth.NewService().ValidateToken(tokenSplit)
+		tokenString, err := auth.NewService("coba", "cobalagi").ValidateToken(tokenSplit)
 		assert.Nil(t, err)
 
 		claim, ok := tokenString.Claims.(jwt.MapClaims)

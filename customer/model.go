@@ -17,10 +17,10 @@ type Customer struct {
 }
 
 type InputCustomer struct {
-	Name            string `json:"name" binding:"required"`
-	Email           string `json:"email" binding:"required"`
-	Password        string `json:"password" binding:"required"`
-	ConfirmPassword string `json:"confirm_password" binding:"required"`
+	Name            string `json:"name" binding:"required" validate:"required"`
+	Email           string `json:"email" binding:"required,email" validate:"email"`
+	Password        string `json:"password" binding:"required" validate:"min=8,max=32,alphanum"`
+	ConfirmPassword string `json:"confirm_password" binding:"required" validate:"eqfield=Password,required"`
 }
 
 type InputLogin struct {

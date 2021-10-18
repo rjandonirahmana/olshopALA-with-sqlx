@@ -13,7 +13,7 @@ type repository struct {
 
 type Repository interface {
 	RegisterUser(customer Customer) (Customer, error)
-	UpdateCustomerPhone(email string, number string) error
+	UpdateCustomerPhone(id int, number string) error
 	GetCustomerByID(id int) (Customer, error)
 	ChangePassword(newPassword string, id int) error
 	GetCustomerByEmail(email string) (Customer, error)
@@ -27,9 +27,9 @@ func NewRepo(db *sqlx.DB) *repository {
 
 func (r *repository) RegisterUser(customer Customer) (Customer, error) {
 
-	querry := `INSERT INTO customers (id, name, phone, email, password, salt, avatar, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+	querry := `INSERT INTO customers (name, phone, email, password, salt, avatar, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 
-	_, err := r.db.Exec(querry, customer.ID, customer.Name, customer.Phone, customer.Email, customer.Password, customer.Salt, customer.Avatar, customer.CreatedAt, customer.UpdatedAt)
+	_, err := r.db.Exec(querry, customer.Name, customer.Phone, customer.Email, customer.Password, customer.Salt, customer.Avatar, customer.CreatedAt, customer.UpdatedAt)
 
 	if err != nil {
 		return Customer{}, err
@@ -38,7 +38,7 @@ func (r *repository) RegisterUser(customer Customer) (Customer, error) {
 	return customer, nil
 }
 
-func (r *repository) UpdateCustomerPhone(email string, number string) error {
+func (r *repository) UpdateCustomerPhone(id int, number string) error {
 
 	querry := `
 	UPDATE 
@@ -47,10 +47,10 @@ func (r *repository) UpdateCustomerPhone(email string, number string) error {
 		phone = ?, 
 		updated_at = ?
 	WHERE 
-		email = ?
+		id = ?
 	`
 
-	_, err := r.db.Exec(querry, number, time.Now(), email)
+	_, err := r.db.Exec(querry, number, time.Now(), id)
 
 	if err != nil {
 		return err

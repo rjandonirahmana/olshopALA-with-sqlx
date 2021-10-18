@@ -21,7 +21,7 @@ type ServiceCustomer struct {
 type CustomerInt interface {
 	Register(customer Customer) (Customer, error)
 	LoginCustomer(input InputLogin) (Customer, error)
-	UpdateCustomerPhone(phone string, email string) error
+	UpdateCustomerPhone(phone string, id int) error
 	GetCustomerByID(id int) (Customer, error)
 	IsEmailAvailable(email string) (bool, error)
 	ChangeProfile(profile []byte, name string, id int) (Customer, error)
@@ -77,21 +77,16 @@ func (s *ServiceCustomer) LoginCustomer(input InputLogin) (Customer, error) {
 
 	err1 := bcrypt.CompareHashAndPassword([]byte(customer.Password), []byte(password))
 	if err1 != nil {
-		return Customer{}, errors.New("different password")
+		return Customer{}, errors.New("please input your password correctly")
 	}
 
 	return customer, nil
 
 }
 
-func (s *ServiceCustomer) UpdateCustomerPhone(phone string, email string) error {
+func (s *ServiceCustomer) UpdateCustomerPhone(phone string, id int) error {
 
-	_, err := s.repo.GetCustomerByEmail(email)
-	if err != nil {
-		return errors.New("email not found")
-	}
-
-	err = s.repo.UpdateCustomerPhone(email, phone)
+	err := s.repo.UpdateCustomerPhone(id, phone)
 	if err != nil {
 		return err
 	}

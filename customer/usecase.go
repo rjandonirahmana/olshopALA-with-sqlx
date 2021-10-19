@@ -23,7 +23,6 @@ type CustomerInt interface {
 	LoginCustomer(input InputLogin) (Customer, error)
 	UpdateCustomerPhone(phone string, id int) error
 	GetCustomerByID(id int) (Customer, error)
-	IsEmailAvailable(email string) (bool, error)
 	ChangeProfile(profile []byte, name string, id int) (Customer, error)
 	ChangePassword(oldpassword, newPassword string, id int) (Customer, error)
 	DeleteCustomer(id int, password string) error
@@ -35,9 +34,9 @@ func NewCustomerService(repo Repository) *ServiceCustomer {
 
 func (s *ServiceCustomer) Register(customer Customer) (Customer, error) {
 
-	_, err := s.IsEmailAvailable(customer.Email)
+	err := s.repo.IsEmailAvailable(customer.Email)
 	if err != nil {
-		return Customer{}, errors.New("email has been used")
+		return customer, err
 	}
 
 	customer.Salt = RandStringBytes(len(customer.Password) + 9)
@@ -102,15 +101,6 @@ func (s *ServiceCustomer) GetCustomerByID(id int) (Customer, error) {
 	}
 
 	return customer, nil
-}
-
-func (s *ServiceCustomer) IsEmailAvailable(email string) (bool, error) {
-	customer, _ := s.repo.GetCustomerByEmail(email)
-
-	if customer.Email == email {
-		return false, errors.New("email has been used")
-	}
-	return true, nil
 }
 
 func (s *ServiceCustomer) ChangeProfile(profile []byte, name string, id int) (Customer, error) {

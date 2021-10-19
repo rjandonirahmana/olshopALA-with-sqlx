@@ -1,6 +1,8 @@
 package customer
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -19,6 +21,7 @@ type Repository interface {
 	GetCustomerByEmail(email string) (Customer, error)
 	ChangeAvatar(avatarFile string, id int) error
 	DeleteCustomer(id int) error
+	IsEmailAvailable(email string) error
 }
 
 func NewRepo(db *sqlx.DB) *repository {
@@ -120,4 +123,19 @@ func (r *repository) DeleteCustomer(id int) error {
 	}
 
 	return nil
+}
+
+func (r *repository) IsEmailAvailable(email string) error {
+	var id uint
+	querry := `SELECT id FROM customers WHERE email = ?`
+	err := r.db.QueryRowx(querry, email).Scan(&id)
+	if err == sql.ErrNoRows && id == 0 {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	return errors.New("email has been used by another")
+
 }

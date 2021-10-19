@@ -1,91 +1,116 @@
-package testing
+package product
 
-// Insert dummy data first
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"olshop/product"
+	"os"
+	"strings"
+	"testing"
 
-// import (
-// 	"fmt"
-// 	"log"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"olshop/customer"
-// 	"olshop/handler"
-// 	"olshop/product"
-// 	"os"
-// 	"strings"
-// 	"testing"
+	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
+)
 
-// 	"github.com/gin-gonic/gin"
-// 	"github.com/gin-gonic/gin/binding"
-// 	_ "github.com/go-sql-driver/mysql"
-// 	"github.com/jmoiron/sqlx"
-// 	"github.com/joho/godotenv"
-// 	"github.com/stretchr/testify/assert"
-// )
+var (
+	db, _ = connectDB()
+	r     = product.NewRepoProduct(db)
+	s     = product.NewService(r)
+	h     = NewProductHandler(s)
+)
 
-// func LoadEnv() {
-// 	err := godotenv.Load("../.env")
-// 	if err != nil {
-// 		log.Fatalf("Error loading environment variables")
-// 		os.Exit(1)
-// 	}
-// }
+func LoadEnv() {
+	err := godotenv.Load("../../.env")
+	if err != nil {
+		log.Fatalf("Error loading environment variables")
+		os.Exit(1)
+	}
+}
 
-// func connectDB() (*sqlx.DB, error) {
-// 	LoadEnv()
-// 	conn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=True",
-// 		os.Getenv("DB_username"),
-// 		os.Getenv("DB_password"),
-// 		os.Getenv("DB_host"),
-// 		os.Getenv("DB_port"),
-// 		os.Getenv("DB_name"))
-// 	db, err := sqlx.Connect("mysql", conn)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return db, nil
-// }
+func connectDB() (*sqlx.DB, error) {
+	LoadEnv()
+	conn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=True",
+		os.Getenv("DB_username"),
+		os.Getenv("DB_password"),
+		os.Getenv("DB_host"),
+		os.Getenv("DB_port"),
+		os.Getenv("DB_name"))
+	db, err := sqlx.Connect("mysql", conn)
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
+}
 
-// func TestGetProductCategory(t *testing.T) {
-// 	// Testcases list
-// 	testCases := []struct {
-// 		testName   string
-// 		category   string
-// 		expectCode int
-// 		expectMsg  string
-// 	}{
-// 		{
-// 			testName:   "success",
-// 			category:   "book",
-// 			expectCode: http.StatusOK,
-// 			expectMsg:  "success",
-// 		},
-// 	}
+func TestGetProductCategory(t *testing.T) {
+	// Testcases list
+	testCases := []struct {
+		testName   string
+		category   string
+		expectCode int
+		expectMsg  string
+	}{
+		{
+			testName:   "success",
+			category:   "6",
+			expectCode: http.StatusOK,
+			expectMsg:  "success",
+		},
+	}
 
-// 	// setting handler
-// 	db, _ := connectDB()
-// 	r := product.NewRepoProduct(db)
-// 	s := product.NewService(r)
-// 	h := handler.NewProductHandler(s)
+	// setting handler
 
-// 	for _, testCase := range testCases {
-// 		reqBody := fmt.Sprintf(`category=%s`, testCase.category)
-// 		req := httptest.NewRequest(http.MethodGet, "/productCategory", strings.NewReader(reqBody))
-// 		res := httptest.NewRecorder()
+	for _, testCase := range testCases {
 
-// 		c, r := gin.CreateTestContext(res)
-// 		c.Request = req
-// 		c.Request.Header.Add("Content-Type", binding.MIMEPOSTForm)
-// 		r.ServeHTTP(res, req)
+		res := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(res)
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/category", nil)
+		req.Header.Set("Content-Type", "application/json")
+		q := req.URL.Query()
+		q.Add("id", testCase.category)
+		req.URL.RawQuery = q.Encode()
+		c.Request = req
 
-// 		h.GetProductByCategory(c)
-// 		r.GET("/productCategory", h.GetProductByCategory)
-// 		h.GetProductByCategory(c)
+		h.GetProductByCategory(c)
 
-// 		assert.Equal(t, testCase.expectCode, res.Code)
-// 		assert.True(t, strings.Contains(res.Body.String(), testCase.category))
-// 		assert.True(t, strings.Contains(res.Body.String(), testCase.expectMsg))
-// 	}
-// }
+		fmt.Println(res)
+
+	}
+}
+
+func TestGetProductID(t *testing.T) {
+	testCases := []struct {
+		name         string
+		request      string
+		expectedCode int
+	}{
+		{
+			name:         "test1",
+			request:      "2",
+			expectedCode: 200,
+		},
+	}
+
+	for _, test := range testCases {
+		f := make(url.Values)
+		f.Set("id", test.request)
+		res := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(res)
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/product/", strings.NewReader(f.Encode()))
+		req.Header.Set("Content-Type", "application/json")
+		c.Request = req
+
+		h.GetProductByID(c)
+
+		fmt.Println(res)
+
+	}
+}
 
 // func TestAddShoppingCart(t *testing.T) {
 // 	// Testcases list
@@ -221,4 +246,5 @@ package testing
 // 		assert.True(t, strings.Contains(res.Body.String(), testCase.productId))
 // 		assert.True(t, strings.Contains(res.Body.String(), testCase.expectMsg))
 // 	}
+// }
 // }

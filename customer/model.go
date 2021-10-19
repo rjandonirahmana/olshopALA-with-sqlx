@@ -18,7 +18,7 @@ type Customer struct {
 
 type InputCustomer struct {
 	Name            string `json:"name" binding:"required" validate:"required"`
-	Email           string `json:"email" binding:"required,email" validate:"email"`
+	Email           string `json:"email" binding:"required,email" validate:"required,email"`
 	Password        string `json:"password" binding:"required" validate:"min=8,max=32,alphanum"`
 	ConfirmPassword string `json:"confirm_password" binding:"required" validate:"eqfield=Password,required"`
 }

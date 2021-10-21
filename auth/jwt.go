@@ -8,9 +8,9 @@ import (
 )
 
 type Service interface {
-	GenerateToken(customer_id int) (string, error)
+	GenerateToken(customer_id uint) (string, error)
 	ValidateToken(token string) (*jwt.Token, error)
-	GenerateTokenSeller(seller_id int) (string, error)
+	GenerateTokenSeller(seller_id uint) (string, error)
 	ValidateTokenSeller(encodedToken string) (*jwt.Token, error)
 }
 
@@ -23,7 +23,7 @@ func NewService(secret_key_customer, secret_key_seller string) *jwtService {
 	return &jwtService{SECRET_KEY: []byte(secret_key_customer), SECRET_KEY2: []byte(secret_key_seller)}
 }
 
-func (j *jwtService) GenerateToken(customer_id int) (string, error) {
+func (j *jwtService) GenerateToken(customer_id uint) (string, error) {
 
 	//claim adalah payload data jwt
 	claim := jwt.MapClaims{}
@@ -56,7 +56,7 @@ func (j *jwtService) ValidateToken(encodedToken string) (*jwt.Token, error) {
 	return token, nil
 }
 
-func (j *jwtService) GenerateTokenSeller(seller_id int) (string, error) {
+func (j *jwtService) GenerateTokenSeller(seller_id uint) (string, error) {
 
 	//claim adalah payload data jwt
 	claim := jwt.MapClaims{}

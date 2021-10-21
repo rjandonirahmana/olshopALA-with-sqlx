@@ -5,7 +5,14 @@ type service struct {
 }
 
 type Service interface {
-	
+	GetListInShopCart(cartid int, customerid int) ([]ShopeCart, error)
+	DeleteListOnshoppingCart(cartid, customerid, productid int) ([]ShopeCart, error)
+	GetShopCartCustomer(customerid int) ([]Cart, error)
+	DecreaseProductShopCart(customerid, productid, cartid int) ([]ShopeCart, error)
+}
+
+func NewService(repo Repository) *service {
+	return &service{repository: repo}
 }
 
 func (s *service) GetListInShopCart(cartid int, customerid int) ([]ShopeCart, error) {

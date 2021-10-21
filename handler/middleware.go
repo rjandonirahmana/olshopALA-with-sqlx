@@ -41,7 +41,7 @@ func (m *middleWare) AuthMiddleWareCustomer(auth auth.Service, service customer.
 			return
 		}
 
-		customerID := int(claim["customer_id"].(float64))
+		customerID := uint(claim["customer_id"].(float64))
 
 		customer, err := service.GetCustomerByID(customerID)
 		if err != nil {
@@ -79,7 +79,7 @@ func (m *middleWare) AuthMiddleWareSeller(auth auth.Service, service seller.Serv
 			return
 		}
 
-		sellerID := int(claim["seller_id"].(float64))
+		sellerID := uint(claim["seller_id"].(float64))
 
 		seller, err := service.GetSellerByID(sellerID)
 		if err != nil {
@@ -88,6 +88,6 @@ func (m *middleWare) AuthMiddleWareSeller(auth auth.Service, service seller.Serv
 			return
 		}
 
-		c.Set("CurrentSeller", seller)
+		c.Set("currentSeller", seller)
 	}
 }

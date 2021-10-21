@@ -1,6 +1,7 @@
 package customer
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -15,28 +16,29 @@ const AllowedExtensions = ".jpeg,.jpg"
 const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 type ServiceCustomer struct {
-	repo Repository
+	repo   Repository
+	secret string
 }
 
 type CustomerInt interface {
 	Register(customer Customer) (Customer, error)
 	LoginCustomer(input InputLogin) (Customer, error)
-	UpdateCustomerPhone(phone string, id int) error
-	GetCustomerByID(id int) (Customer, error)
-	ChangeProfile(profile []byte, name string, id int) (Customer, error)
-	ChangePassword(oldpassword, newPassword string, id int) (Customer, error)
-	DeleteCustomer(id int, password string) error
+	UpdateCustomerPhone(phone string, id uint) error
+	GetCustomerByID(id uint) (Customer, error)
+	ChangeProfile(profile []byte, name string, id uint) (Customer, error)
+	ChangePassword(oldpassword, newPassword string, id uint) (Customer, error)
+	DeleteCustomer(id uint, password string) error
 }
 
-func NewCustomerService(repo Repository) *ServiceCustomer {
-	return &ServiceCustomer{repo: repo}
+func NewCustomerService(repo Repository, secret string) *ServiceCustomer {
+	return &ServiceCustomer{repo: repo, secret: secret}
 }
 
 func (s *ServiceCustomer) Register(customer Customer) (Customer, error) {
 
 	err := s.repo.IsEmailAvailable(customer.Email)
 	if err != nil {
-		return customer, err
+		return Customer{}, err
 	}
 
 	customer.Salt = RandStringBytes(len(customer.Password) + 9)
@@ -44,19 +46,11 @@ func (s *ServiceCustomer) Register(customer Customer) (Customer, error) {
 	customer.CreatedAt = time.Now()
 	customer.UpdatedAt = time.Now()
 
-	hashpassword, err := bcrypt.GenerateFromPassword([]byte(customer.Password), bcrypt.MinCost)
-	if err != nil {
-		return Customer{}, err
-	}
-
-	customer.Password = string(hashpassword)
+	h := sha256.New()
+	h.Write([]byte(customer.Password))
+	customer.Password = fmt.Sprintf("%x", h.Sum([]byte(s.secret)))
 
 	customer, err = s.repo.RegisterUser(customer)
-	if err != nil {
-		return Customer{}, err
-	}
-
-	customer, err = s.repo.GetCustomerByEmail(customer.Email)
 	if err != nil {
 		return Customer{}, err
 	}
@@ -68,22 +62,23 @@ func (s *ServiceCustomer) LoginCustomer(input InputLogin) (Customer, error) {
 
 	customer, err := s.repo.GetCustomerByEmail(input.Email)
 	if err != nil {
-		return Customer{}, errors.New("email not found")
+		return Customer{}, err
 
 	}
+	input.Password += customer.Salt
+	h := sha256.New()
+	h.Write([]byte(input.Password))
+	hashpassword := fmt.Sprintf("%x", h.Sum([]byte(s.secret)))
 
-	password := input.Password + customer.Salt
-
-	err1 := bcrypt.CompareHashAndPassword([]byte(customer.Password), []byte(password))
-	if err1 != nil {
-		return Customer{}, errors.New("please input your password correctly")
+	if customer.Password != hashpassword {
+		return Customer{}, errors.New("your input password false, please input your password correctly")
 	}
 
 	return customer, nil
 
 }
 
-func (s *ServiceCustomer) UpdateCustomerPhone(phone string, id int) error {
+func (s *ServiceCustomer) UpdateCustomerPhone(phone string, id uint) error {
 
 	err := s.repo.UpdateCustomerPhone(id, phone)
 	if err != nil {
@@ -93,7 +88,7 @@ func (s *ServiceCustomer) UpdateCustomerPhone(phone string, id int) error {
 	return nil
 }
 
-func (s *ServiceCustomer) GetCustomerByID(id int) (Customer, error) {
+func (s *ServiceCustomer) GetCustomerByID(id uint) (Customer, error) {
 
 	customer, err := s.repo.GetCustomerByID(id)
 	if err != nil {
@@ -103,7 +98,7 @@ func (s *ServiceCustomer) GetCustomerByID(id int) (Customer, error) {
 	return customer, nil
 }
 
-func (s *ServiceCustomer) ChangeProfile(profile []byte, name string, id int) (Customer, error) {
+func (s *ServiceCustomer) ChangeProfile(profile []byte, name string, id uint) (Customer, error) {
 
 	mime := mimetype.Detect(profile)
 	if strings.Index(AllowedExtensions, mime.Extension()) == -1 {
@@ -131,39 +126,37 @@ func RandStringBytes(n int) string {
 	return string(b)
 }
 
-func (s *ServiceCustomer) ChangePassword(oldpassword, newPassword string, id int) (Customer, error) {
+func (s *ServiceCustomer) ChangePassword(oldpassword, newPassword string, id uint) (Customer, error) {
 	customer, err := s.repo.GetCustomerByID(id)
 	if err != nil {
 		return Customer{}, err
 	}
 	oldpassword += customer.Salt
+	h := sha256.New()
+	h.Write([]byte(oldpassword))
+	hashpassword := fmt.Sprintf("%x", h.Sum([]byte(s.secret)))
 
-	err1 := bcrypt.CompareHashAndPassword([]byte(customer.Password), []byte(oldpassword))
-	if err1 != nil {
-		return Customer{}, errors.New("please input your password correctly")
+	if customer.Password != hashpassword {
+		return Customer{}, errors.New("your input password false, cannot change password")
 	}
+
 	newPassword += customer.Salt
+	h = sha256.New()
+	h.Write([]byte(newPassword))
+	hashpassword = fmt.Sprintf("%x", h.Sum([]byte(s.secret)))
 
-	hashpassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.MinCost)
+	err = s.repo.ChangePassword(hashpassword, id)
 	if err != nil {
 		return Customer{}, err
 	}
 
-	err = s.repo.ChangePassword(string(hashpassword), id)
-	if err != nil {
-		return Customer{}, err
-	}
-
-	customer, err = s.repo.GetCustomerByID(id)
-	if err != nil {
-		return Customer{}, err
-	}
+	customer.Password = hashpassword
 
 	return customer, nil
 
 }
 
-func (s *ServiceCustomer) DeleteCustomer(id int, password string) error {
+func (s *ServiceCustomer) DeleteCustomer(id uint, password string) error {
 	customer, err := s.repo.GetCustomerByID(id)
 	if err != nil {
 		return err

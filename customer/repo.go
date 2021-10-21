@@ -15,12 +15,12 @@ type repository struct {
 
 type Repository interface {
 	RegisterUser(customer Customer) (Customer, error)
-	UpdateCustomerPhone(id int, number string) error
-	GetCustomerByID(id int) (Customer, error)
-	ChangePassword(newPassword string, id int) error
+	UpdateCustomerPhone(id uint, number string) error
+	GetCustomerByID(id uint) (Customer, error)
+	ChangePassword(newPassword string, id uint) error
 	GetCustomerByEmail(email string) (Customer, error)
-	ChangeAvatar(avatarFile string, id int) error
-	DeleteCustomer(id int) error
+	ChangeAvatar(avatarFile string, id uint) error
+	DeleteCustomer(id uint) error
 	IsEmailAvailable(email string) error
 }
 
@@ -30,27 +30,29 @@ func NewRepo(db *sqlx.DB) *repository {
 
 func (r *repository) RegisterUser(customer Customer) (Customer, error) {
 
-	querry := `INSERT INTO customers (name, phone, email, password, salt, avatar, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+	querry := `INSERT INTO customers (name, phone, email, password, salt, avatar, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`
 
-	_, err := r.db.Exec(querry, customer.Name, customer.Phone, customer.Email, customer.Password, customer.Salt, customer.Avatar, customer.CreatedAt, customer.UpdatedAt)
+	var id uint
+	err := r.db.QueryRowx(querry, customer.Name, customer.Phone, customer.Email, customer.Password, customer.Salt, customer.Avatar, customer.CreatedAt, customer.UpdatedAt).Scan(&id)
 
 	if err != nil {
 		return Customer{}, err
 	}
 
+	customer.ID = id
 	return customer, nil
 }
 
-func (r *repository) UpdateCustomerPhone(id int, number string) error {
+func (r *repository) UpdateCustomerPhone(id uint, number string) error {
 
 	querry := `
 	UPDATE 
 		customers 
 	SET 
-		phone = ?, 
-		updated_at = ?
+		phone = $1, 
+		updated_at = $2
 	WHERE 
-		id = ?
+		id = $3
 	`
 
 	_, err := r.db.Exec(querry, number, time.Now(), id)
@@ -62,8 +64,8 @@ func (r *repository) UpdateCustomerPhone(id int, number string) error {
 	return nil
 }
 
-func (r *repository) GetCustomerByID(id int) (Customer, error) {
-	querry := `SELECT * FROM customers WHERE id = ?`
+func (r *repository) GetCustomerByID(id uint) (Customer, error) {
+	querry := `SELECT * FROM customers WHERE id = $1`
 
 	var customer Customer
 
@@ -75,8 +77,8 @@ func (r *repository) GetCustomerByID(id int) (Customer, error) {
 	return customer, nil
 }
 
-func (r *repository) ChangeAvatar(avatarFile string, id int) error {
-	querry := `UPDATE customers SET avatar = ?, updated_at = ? WHERE id = ? `
+func (r *repository) ChangeAvatar(avatarFile string, id uint) error {
+	querry := `UPDATE customers SET avatar = $1, updated_at = $2 WHERE id = $3`
 
 	_, err := r.db.Exec(querry, avatarFile, time.Now(), id)
 
@@ -88,8 +90,8 @@ func (r *repository) ChangeAvatar(avatarFile string, id int) error {
 	return nil
 }
 
-func (r *repository) ChangePassword(newPassword string, id int) error {
-	querry := `UPDATE customers SET password = ?, updated_at = ? WHERE id = ? `
+func (r *repository) ChangePassword(newPassword string, id uint) error {
+	querry := `UPDATE customers SET password = $1, updated_at = $2 WHERE id = $3`
 
 	_, err := r.db.Exec(querry, newPassword, time.Now(), id)
 
@@ -102,7 +104,7 @@ func (r *repository) ChangePassword(newPassword string, id int) error {
 }
 
 func (r *repository) GetCustomerByEmail(email string) (Customer, error) {
-	querry := `SELECT * FROM customers WHERE email = ?`
+	querry := `SELECT * FROM customers WHERE email = $1`
 
 	var customer Customer
 
@@ -114,8 +116,8 @@ func (r *repository) GetCustomerByEmail(email string) (Customer, error) {
 	return customer, nil
 }
 
-func (r *repository) DeleteCustomer(id int) error {
-	querry := `DELETE FROM customers WHERE id = ?`
+func (r *repository) DeleteCustomer(id uint) error {
+	querry := `DELETE FROM customers WHERE id = $1`
 
 	_, err := r.db.Exec(querry, id)
 	if err != nil {
@@ -127,7 +129,7 @@ func (r *repository) DeleteCustomer(id int) error {
 
 func (r *repository) IsEmailAvailable(email string) error {
 	var id uint
-	querry := `SELECT id FROM customers WHERE email = ?`
+	querry := `SELECT id FROM customers WHERE email = $1`
 	err := r.db.QueryRowx(querry, email).Scan(&id)
 	if err == sql.ErrNoRows && id == 0 {
 		return nil

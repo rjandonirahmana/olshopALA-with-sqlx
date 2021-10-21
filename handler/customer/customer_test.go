@@ -49,7 +49,7 @@ var (
 	authorization   = auth.NewService("coba", "cobalagi")
 	db              = setupdb()
 	customerdb      = customer.NewRepo(db)
-	customerserv    = customer.NewCustomerService(customerdb)
+	customerserv    = customer.NewCustomerService(customerdb, "abc")
 	customerHandler = NewHandlerCustomer(customerserv, authorization)
 	middlerware     = handler.NewMiddleWare()
 )
@@ -219,7 +219,7 @@ func TestUpdatePassword(t *testing.T) {
 	// Testcases list
 	testCases := []struct {
 		testName    string
-		id          int
+		id          uint
 		oldPassword string
 		newPassword string
 		expectCode  int
@@ -271,7 +271,7 @@ func TestDeleteAccount(t *testing.T) {
 
 	testCases := []struct {
 		testName   string
-		id         int
+		id         uint
 		password   string
 		expectCode int
 		expectMsg  string

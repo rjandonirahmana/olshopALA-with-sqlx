@@ -64,7 +64,7 @@ func TestMiddleware(t *testing.T) {
 
 	for _, testCase := range testCases {
 		id, _ := strconv.Atoi(testCase.currentCustomer.id)
-		token, err := auth.NewService("coba", "cobalagi").GenerateToken(id)
+		token, err := auth.NewService("coba", "cobalagi").GenerateToken(uint(id))
 		assert.Nil(t, err)
 
 		reqBody, _ := json.Marshal(map[string]string{

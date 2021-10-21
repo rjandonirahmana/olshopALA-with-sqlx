@@ -22,7 +22,7 @@ func NewTransactionRepo(db *sqlx.DB) *repoTransaction {
 }
 
 func (r *repoTransaction) GetDetailTransaction(id int) (Transactions, error) {
-	querry := `SELECT * FROM transactions WHERE id = ?`
+	querry := `SELECT * FROM transactions WHERE id = $1`
 	var trans Transactions
 	err := r.db.Get(&trans, querry, id)
 
@@ -36,22 +36,22 @@ func (r *repoTransaction) GetDetailTransaction(id int) (Transactions, error) {
 func (r *repoTransaction) InserTransaction(t Transactions) error {
 
 	querry := `INSERT INTO transactions
-	(id, customer_id, price, created_at, max_time, shopcart_id, payment_id)
-	VALUES(?, ?, ?, ?, ?, ?, ?)`
+	(customer_id, price, created_at, max_time, shopcart_id, payment_id)
+	VALUES($1, $2, $3, $4, $5, $6) RETURNING id`
 
-	_, err := r.db.Exec(querry, t.ID, t.CustomerID, t.Price, t.CreatedAt, t.MaxTime, t.ShopCartID, t.PaymentID)
+	var id uint
+	err := r.db.QueryRowx(querry, t.CustomerID, t.Price, t.CreatedAt, t.MaxTime, t.ShopCartID, t.PaymentID).Scan(&id)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
+	t.ID = int(id)
 
 	return nil
 }
 
 func (r *repoTransaction) CheckTransaction(cartid int) (int, error) {
 	querry := `SELECT id FROM transactions WHERE shopcart_id = ? AND max_time > ?`
-
-	//select id transacttion biar di passs ke detail transaction kalo ada
 
 	row, err := r.db.Queryx(querry, cartid, time.Now())
 	var value int

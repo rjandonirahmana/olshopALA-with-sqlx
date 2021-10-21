@@ -1,23 +1,26 @@
 package seller
 
 import (
+	"crypto/sha256"
+	"errors"
+	"fmt"
 	"math/rand"
 	"time"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 type service struct {
-	repo RepoInt
+	repo   RepoInt
+	secret string
 }
 
 type Service interface {
-	Register(seller Seller) (Seller, error)
-	GetSellerByID(id int) (Seller, error)
+	Register(input InputSeller) (Seller, error)
+	GetSellerByID(id uint) (Seller, error)
+	LoginSeller(input InputLoginSeller) (Seller, error)
 }
 
-func NewService(repo RepoInt) *service {
-	return &service{repo: repo}
+func NewService(repo RepoInt, secret string) *service {
+	return &service{repo: repo, secret: secret}
 }
 
 const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz123456789"
@@ -30,19 +33,28 @@ func RandStringBytes(n int) string {
 	return string(b)
 }
 
-func (s *service) Register(seller Seller) (Seller, error) {
-
-	seller.Salt = RandStringBytes(len(seller.Password))
-	seller.Password += seller.Salt
-	seller.CreatedAt = time.Now()
-	seller.UpdatedAt = time.Now()
-
-	hashpassword, err := bcrypt.GenerateFromPassword([]byte(seller.Password), bcrypt.MinCost)
+func (s *service) Register(input InputSeller) (Seller, error) {
+	err := s.repo.IsEmailAvailable(input.Email)
 	if err != nil {
 		return Seller{}, err
 	}
 
-	seller.Password = string(hashpassword)
+	salt := RandStringBytes(len(s.secret))
+	input.Password += salt
+
+	h := sha256.New()
+	h.Write([]byte(input.Password))
+
+	Password := fmt.Sprintf("%x", h.Sum([]byte(s.secret)))
+
+	seller := Seller{
+		Name:      input.Name,
+		Email:     input.Email,
+		Password:  Password,
+		Salt:      salt,
+		CreatedAt: time.Now(),
+		UpdatedAt: time.Now(),
+	}
 
 	seller, err = s.repo.CreateSeller(seller)
 	if err != nil {
@@ -52,7 +64,28 @@ func (s *service) Register(seller Seller) (Seller, error) {
 	return seller, nil
 }
 
-func (s *service) GetSellerByID(id int) (Seller, error) {
+func (s *service) LoginSeller(input InputLoginSeller) (Seller, error) {
+
+	seller, err := s.repo.GetSellerByEmail(input.Email)
+	if err != nil {
+		return Seller{}, err
+
+	}
+	input.Password += seller.Salt
+	h := sha256.New()
+	h.Write([]byte(input.Password))
+	hashpassword := fmt.Sprintf("%x", h.Sum([]byte(s.secret)))
+
+	if seller.Password != hashpassword {
+		fmt.Println(hashpassword)
+		return Seller{}, errors.New("your input password false, please input your password correctly")
+	}
+
+	return seller, nil
+
+}
+
+func (s *service) GetSellerByID(id uint) (Seller, error) {
 	seller, err := s.repo.GetSellerByID(id)
 	if err != nil {
 		return seller, err

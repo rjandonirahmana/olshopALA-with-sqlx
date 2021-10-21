@@ -13,7 +13,7 @@ func TestGenerateValidateToken(t *testing.T) {
 	// Testcases list
 	testCases := []struct {
 		testName string
-		id       int
+		id       uint
 		exp      int64
 	}{
 		{

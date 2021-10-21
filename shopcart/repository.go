@@ -12,7 +12,7 @@ type repository struct {
 }
 
 type Repository interface {
-	IncreaseQuantityInshopCart(cart_id, product_id int) error
+	IncreaseQuantity(cart_id, product_id int) error
 	InsertShoppingCart(cartid, productid int, price int32, name string) error
 	ShopCartCustomer(customerid int) ([]Cart, error)
 	GetListCartByID(cartid int) ([]ShopeCart, error)
@@ -24,8 +24,12 @@ type Repository interface {
 	DeleteAllWhenQuantity0() error
 }
 
-func (r *repository) IncreaseQuantityInshopCart(cart_id, product_id int) error {
-	querry := `UPDATE shopcart SET quantity = quantity + 1 WHERE cart_id = ? AND product_id = ?`
+func NewRepository(db *sqlx.DB) *repository {
+	return &repository{db: db}
+}
+
+func (r *repository) IncreaseQuantity(cart_id, product_id int) error {
+	querry := `UPDATE shopcart SET quantity = quantity + 1 WHERE cart_id = $1 AND product_id = $2`
 
 	_, err := r.db.Exec(querry, cart_id, product_id)
 
@@ -72,7 +76,7 @@ func (r *repository) ShopCartCustomer(customerid int) ([]Cart, error) {
 }
 
 func (r *repository) GetListCartByID(cartid int) ([]ShopeCart, error) {
-	querry := `SELECT cart_id, product_id, product_name, price, quantity FROM shopcart JOIN cart ON shopcart.cart_id = cart.id WHERE shopcart.cart_id = ?`
+	querry := `SELECT cart_id, product_id, product_name, price, quantity FROM shopcart JOIN cart ON shopcart.cart_id = cart.id WHERE shopcart.cart_id = $1`
 
 	var shopcart []ShopeCart
 	err := r.db.Select(&shopcart, querry, cartid)
